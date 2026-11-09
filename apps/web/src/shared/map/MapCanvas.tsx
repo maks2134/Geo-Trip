@@ -26,6 +26,15 @@ const SATELLITE_TILE_URL =
   process.env.NEXT_PUBLIC_SATELLITE_TILE_URL ||
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
+const HIGH_ZOOM_STREET_LABELS = {
+  dark:
+    process.env.NEXT_PUBLIC_STREET_LABELS_DARK ||
+    "https://a.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}.png",
+  light:
+    process.env.NEXT_PUBLIC_STREET_LABELS_LIGHT ||
+    "https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png",
+};
+
 export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -176,7 +185,40 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
         },
       });
     }
-  }, [basemap]);
+
+    // 4. Add High-Zoom Street & Road Labels Layer (zoom >= 12)
+    if (!map.getSource("high-zoom-street-labels")) {
+      map.addSource("high-zoom-street-labels", {
+        type: "raster",
+        tiles: [HIGH_ZOOM_STREET_LABELS[theme]],
+        tileSize: 256,
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        minzoom: 12,
+        maxzoom: 20,
+      });
+    }
+
+    if (!map.getLayer("high-zoom-street-labels-layer")) {
+      map.addLayer({
+        id: "high-zoom-street-labels-layer",
+        type: "raster",
+        source: "high-zoom-street-labels",
+        minzoom: 12,
+        paint: {
+          "raster-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            12,
+            0.6,
+            14,
+            1.0,
+          ],
+          "raster-fade-duration": 200,
+        },
+      });
+    }
+  }, [basemap, theme]);
 
   // Initialize Map
   useEffect(() => {
@@ -201,12 +243,18 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
       if (!quickPinModeRef.current) return;
       const { lat, lng } = e.lngLat;
       const currentLoc = localeRef.current;
+      const defaultPinName =
+        currentLoc === "ru"
+          ? `Точка на карте (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+          : `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+      const defaultAddress =
+        currentLoc === "ru" ? "Определение адреса..." : "Reverse geocoding...";
 
       setDroppedPin({
         lat,
         lng,
-        name: `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-        address: "Reverse geocoding...",
+        name: defaultPinName,
+        address: defaultAddress,
       });
       setQuickPinMode(false);
 
@@ -215,7 +263,7 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
         setDroppedPin({
           lat,
           lng,
-          name: geo.name || `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+          name: geo.name || defaultPinName,
           address: geo.address,
           city: geo.city,
           country: geo.country,
@@ -460,13 +508,13 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Floating Streets ↔ Satellite Toggle Pill (MH-D) */}
-      <div className="absolute top-4 right-16 z-20 flex items-center rounded-xl p-1 bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl text-xs font-semibold text-slate-200">
+      <div className="absolute top-4 right-16 z-20 flex items-center rounded-xl p-1 bg-[var(--glass)] backdrop-blur-xl border border-[var(--glass-border)] shadow-2xl text-xs font-semibold text-[var(--text)]">
         <button
           onClick={() => setBasemap("streets")}
           className={`px-3 py-1.5 rounded-lg transition-all ${
             basemap === "streets"
-              ? "bg-sky-500 text-white shadow-md font-bold"
-              : "hover:text-white hover:bg-white/10"
+              ? "bg-[var(--accent)] text-white shadow-md font-bold"
+              : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/5 dark:hover:bg-white/10"
           }`}
         >
           {t("basemap.streets")}
@@ -475,8 +523,8 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
           onClick={() => setBasemap("satellite")}
           className={`px-3 py-1.5 rounded-lg transition-all ${
             basemap === "satellite"
-              ? "bg-sky-500 text-white shadow-md font-bold"
-              : "hover:text-white hover:bg-white/10"
+              ? "bg-[var(--accent)] text-white shadow-md font-bold"
+              : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/5 dark:hover:bg-white/10"
           }`}
         >
           {t("basemap.satellite")}

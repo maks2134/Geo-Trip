@@ -14,9 +14,9 @@ export function PinFilters() {
   const { t } = useTranslation();
 
   const statuses: { id: PinStatus; labelKey: string; icon: React.ReactNode; color: string }[] = [
-    { id: "visited", labelKey: "filters.visited", icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-amber-400" },
-    { id: "planned", labelKey: "filters.planned", icon: <Calendar className="w-3.5 h-3.5" />, color: "text-blue-400" },
-    { id: "wishlist", labelKey: "filters.wishlist", icon: <Bookmark className="w-3.5 h-3.5" />, color: "text-pink-400" },
+    { id: "visited", labelKey: "filters.visited", icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-amber-500 dark:text-amber-400" },
+    { id: "planned", labelKey: "filters.planned", icon: <Calendar className="w-3.5 h-3.5" />, color: "text-blue-500 dark:text-blue-400" },
+    { id: "wishlist", labelKey: "filters.wishlist", icon: <Bookmark className="w-3.5 h-3.5" />, color: "text-pink-500 dark:text-pink-400" },
   ];
 
   const categories: { id: PinCategory; labelKey: string; icon: React.ReactNode }[] = [
@@ -50,8 +50,8 @@ export function PinFilters() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-medium border transition-all",
                 active
-                  ? "bg-white/10 border-white/20 text-white shadow-sm"
-                  : "bg-transparent border-transparent text-[var(--text-muted)] hover:bg-white/5"
+                  ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--accent)] font-bold shadow-sm"
+                  : "bg-transparent border-transparent text-[var(--text-muted)] hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
               <span className={s.color}>{s.icon}</span>
@@ -62,7 +62,7 @@ export function PinFilters() {
       </div>
 
       {/* Category filters */}
-      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/5">
+      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-[var(--glass-border)]">
         {categories.map((c) => {
           const active = categoryFilters.includes(c.id);
           return (
@@ -72,8 +72,8 @@ export function PinFilters() {
               className={cn(
                 "flex items-center gap-1.5 py-1 px-2.5 rounded-lg text-xs font-medium border transition-all",
                 active
-                  ? "bg-[var(--accent)]/15 border-[var(--accent)]/30 text-[var(--accent)]"
-                  : "bg-white/[0.02] border-white/5 text-[var(--text-muted)] hover:text-[var(--text)]"
+                  ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--accent)] font-bold shadow-sm"
+                  : "bg-black/[0.03] dark:bg-white/[0.02] border-[var(--glass-border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
               {c.icon}
