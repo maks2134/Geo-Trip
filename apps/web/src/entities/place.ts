@@ -11,6 +11,8 @@ export interface Attachment {
   uploadedAt: string;
 }
 
+export type PlaceAttachment = Attachment;
+
 export interface Place {
   id: string;
   name: string;

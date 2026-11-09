@@ -30,5 +30,10 @@ type TripServiceHandler interface {
 	ListChecklistItems(context.Context, *tripv1.ListChecklistItemsRequest) (*tripv1.ListChecklistItemsResponse, error)
 
 	CreateAttachmentPresignedURL(context.Context, *tripv1.CreateAttachmentPresignedURLRequest) (*tripv1.CreateAttachmentPresignedURLResponse, error)
+	ConfirmAttachmentUpload(context.Context, *tripv1.ConfirmAttachmentUploadRequest) (*tripv1.ConfirmAttachmentUploadResponse, error)
+	ListAttachments(context.Context, *tripv1.ListAttachmentsRequest) (*tripv1.ListAttachmentsResponse, error)
+	DeleteAttachment(context.Context, *tripv1.DeleteAttachmentRequest) (*tripv1.DeleteAttachmentResponse, error)
+
 	GetPublicShareTrip(context.Context, *tripv1.GetPublicShareTripRequest) (*tripv1.GetPublicShareTripResponse, error)
+	ClonePublicTrip(context.Context, *tripv1.ClonePublicTripRequest) (*tripv1.ClonePublicTripResponse, error)
 }

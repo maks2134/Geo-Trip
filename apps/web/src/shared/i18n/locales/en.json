@@ -1,0 +1,158 @@
+{
+  "app": {
+    "name": "AtlasFlow",
+    "subtitle": "NomadGlass",
+    "tagline": "World Scratch Map & Day-by-Day Trip Planner"
+  },
+  "nav": {
+    "worldMap": "World Map",
+    "trips": "Trips",
+    "share": "Share",
+    "settings": "Settings"
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "basemap": {
+    "streets": "Streets",
+    "satellite": "Satellite",
+    "satelliteFallback": "Satellite imagery unavailable. Reverting to Streets."
+  },
+  "stats": {
+    "title": "Traveler Stats",
+    "countriesUnlocked": "Countries Unlocked",
+    "citiesVisited": "Cities Visited",
+    "totalDistance": "Total Distance",
+    "worldExplored": "World Explored",
+    "unlockedOf": "unlocked of 195",
+    "legendVisited": "Visited",
+    "legendPlanned": "Planned",
+    "legendWishlist": "Wishlist"
+  },
+  "filters": {
+    "status": "Pin Status",
+    "categories": "Categories",
+    "visited": "Visited",
+    "planned": "Planned",
+    "wishlist": "Wishlist",
+    "food": "Food & Drink",
+    "stay": "Stay",
+    "sight": "Sightseeing",
+    "nature": "Nature",
+    "transport": "Transit",
+    "reset": "Reset Filters"
+  },
+  "trip": {
+    "myTrips": "My Trips",
+    "newTrip": "New Trip",
+    "days": "Days",
+    "backlog": "Backlog",
+    "day": "Day",
+    "active": "Active",
+    "upcoming": "Upcoming",
+    "draft": "Draft",
+    "completed": "Completed",
+    "coverPhoto": "Cover Photo",
+    "uploadCover": "Upload Cover",
+    "changeCover": "Change Cover",
+    "exportRoute": "Export Route",
+    "exportGPX": "Export as GPX (.gpx)",
+    "exportGeoJSON": "Export as GeoJSON (.geojson)",
+    "totalRouteDistance": "Total Route",
+    "noPlacesScheduled": "No places scheduled for this day yet. Drag items from backlog or add new pins.",
+    "addPlace": "Add Place",
+    "editPlace": "Edit Place",
+    "deletePlace": "Remove",
+    "backlogTitle": "Trip Backlog (Unassigned)",
+    "backlogEmpty": "Drag places here to hold them in backlog",
+    "reorder": "Reorder place",
+    "shareLinkCopied": "Copied!"
+  },
+  "tabs": {
+    "itinerary": "Itinerary",
+    "budget": "Budget",
+    "checklists": "Checklists"
+  },
+  "budget": {
+    "title": "Trip Budget Tracker",
+    "limit": "Budget Limit",
+    "totalSpent": "Total Spent",
+    "remaining": "Remaining",
+    "spentByCategory": "Spent by Category",
+    "spentByDay": "Spent by Day",
+    "addExpense": "Add Expense",
+    "expenseTitle": "Expense Title",
+    "amount": "Amount",
+    "category": "Category",
+    "date": "Date",
+    "save": "Save Expense"
+  },
+  "checklist": {
+    "title": "Pre-Trip Checklists",
+    "readiness": "Readiness",
+    "preFlight": "Pre-Flight & Documents",
+    "packing": "Packing List",
+    "buyOnSite": "Buy on Arrival",
+    "addItem": "Add Item",
+    "placeholder": "What do you need to pack or prepare?",
+    "applyTemplate": "Templates",
+    "templatesTitle": "Starter Packing Templates",
+    "templateNomad": "Digital Nomad Essentials",
+    "templateNomadDesc": "Laptop, universal adapter, power bank, eSIM, travel insurance",
+    "templateBeach": "Beach & Sun Vacation",
+    "templateBeachDesc": "Swimwear, SPF 50+, beach towel, snorkel, sunglasses",
+    "templateTrek": "Mountain & Trekking",
+    "templateTrekDesc": "Hiking boots, shell jacket, first aid, hydration, headlamp",
+    "templateWinter": "Winter City Break",
+    "templateWinterDesc": "Thermal layers, winter coat, gloves, scarf, compact umbrella",
+    "itemsAdded": "template items added"
+  },
+  "place": {
+    "drawerTitle": "Place Details",
+    "close": "Close",
+    "address": "Address",
+    "estimatedCost": "Est. Cost",
+    "duration": "Duration",
+    "minutes": "min",
+    "rating": "Rating",
+    "notes": "Notes",
+    "links": "Links",
+    "photos": "Photos & Media",
+    "documents": "Vouchers & Documents",
+    "uploadDropzone": "Drag & drop photos or PDF vouchers here, or click to browse",
+    "uploadSizeLimit": "JPG, PNG, WEBP up to 10MB • PDF up to 25MB",
+    "uploading": "Uploading...",
+    "privateBadge": "Private",
+    "publicBadge": "Public",
+    "openMap": "Open on Map",
+    "viewLightbox": "Click to expand photo"
+  },
+  "share": {
+    "title": "Shared Itinerary",
+    "readOnlyBadge": "Read-Only View",
+    "copyToMyTrips": "Copy to My Trips",
+    "copying": "Copying...",
+    "copySuccess": "Trip copied to your workspace!",
+    "copyLoginRequired": "Please sign in or register to clone this trip to your workspace",
+    "daysCount": "Days",
+    "placesCount": "Stops",
+    "byAuthor": "Shared by",
+    "privateNoteNotice": "Private expenses and personal documents are hidden for guest privacy"
+  },
+  "distance": {
+    "walk": "walk",
+    "drive": "drive",
+    "km": "km",
+    "m": "m"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Register",
+    "logout": "Log Out",
+    "email": "Email Address",
+    "password": "Password",
+    "name": "Display Name"
+  }
+}

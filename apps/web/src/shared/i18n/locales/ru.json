@@ -1,0 +1,158 @@
+{
+  "app": {
+    "name": "AtlasFlow",
+    "subtitle": "NomadGlass",
+    "tagline": "Карта путешествий и пошаговый планировщик маршрутов"
+  },
+  "nav": {
+    "worldMap": "Карта мира",
+    "trips": "Поездки",
+    "share": "Поделиться",
+    "settings": "Настройки"
+  },
+  "theme": {
+    "system": "Системная",
+    "light": "Светлая",
+    "dark": "Тёмная"
+  },
+  "basemap": {
+    "streets": "Карта",
+    "satellite": "Спутник",
+    "satelliteFallback": "Спутниковые снимки временно недоступны. Возврат к векторной карте."
+  },
+  "stats": {
+    "title": "Статистика путешественника",
+    "countriesUnlocked": "Открыто стран",
+    "citiesVisited": "Посещено городов",
+    "totalDistance": "Пройдено пути",
+    "worldExplored": "Мира исследовано",
+    "unlockedOf": "открыто из 195",
+    "legendVisited": "Посещено",
+    "legendPlanned": "В планах",
+    "legendWishlist": "Вишлист"
+  },
+  "filters": {
+    "status": "Статус локаций",
+    "categories": "Категории",
+    "visited": "Посещённые",
+    "planned": "Запланированные",
+    "wishlist": "Вишлист",
+    "food": "Еда и напитки",
+    "stay": "Жильё",
+    "sight": "Достопримечательности",
+    "nature": "Природа",
+    "transport": "Транспорт",
+    "reset": "Сбросить фильтры"
+  },
+  "trip": {
+    "myTrips": "Мои поездки",
+    "newTrip": "Новая поездка",
+    "days": "Дни",
+    "backlog": "Бэклог",
+    "day": "День",
+    "active": "Активная",
+    "upcoming": "Предстоящая",
+    "draft": "Черновик",
+    "completed": "Завершённая",
+    "coverPhoto": "Обложка",
+    "uploadCover": "Загрузить обложку",
+    "changeCover": "Сменить обложку",
+    "exportRoute": "Экспорт маршрута",
+    "exportGPX": "Экспорт в GPX (.gpx)",
+    "exportGeoJSON": "Экспорт в GeoJSON (.geojson)",
+    "totalRouteDistance": "Длина маршрута",
+    "noPlacesScheduled": "На этот день пока нет мест. Перетащите карточки из бэклога или добавьте новые точки.",
+    "addPlace": "Добавить место",
+    "editPlace": "Редактировать",
+    "deletePlace": "Удалить",
+    "backlogTitle": "Бэклог поездки (без дня)",
+    "backlogEmpty": "Перетащите места сюда, чтобы сохранить их в бэклоге",
+    "reorder": "Переместить точку",
+    "shareLinkCopied": "Скопировано!"
+  },
+  "tabs": {
+    "itinerary": "Маршрут",
+    "budget": "Бюджет",
+    "checklists": "Чек-листы"
+  },
+  "budget": {
+    "title": "Трекер бюджета поездки",
+    "limit": "Лимит бюджета",
+    "totalSpent": "Потрачено",
+    "remaining": "Остаток",
+    "spentByCategory": "Расходы по категориям",
+    "spentByDay": "Расходы по дням",
+    "addExpense": "Добавить расход",
+    "expenseTitle": "Название расхода",
+    "amount": "Сумма",
+    "category": "Категория",
+    "date": "Дата",
+    "save": "Сохранить"
+  },
+  "checklist": {
+    "title": "Чек-листы перед поездкой",
+    "readiness": "Готовность",
+    "preFlight": "Документы и билеты",
+    "packing": "Что взять с собой",
+    "buyOnSite": "Купить на месте",
+    "addItem": "Добавить пункт",
+    "placeholder": "Что нужно подготовить или упаковать?",
+    "applyTemplate": "Шаблоны",
+    "templatesTitle": "Готовые шаблоны сборов",
+    "templateNomad": "Цифровой кочевник",
+    "templateNomadDesc": "Ноутбук, адаптер питания, пауэрбанк, eSIM, страховка",
+    "templateBeach": "Пляж и море",
+    "templateBeachDesc": "Купальник, крем SPF 50+, пляжное полотенце, очки",
+    "templateTrek": "Горы и треккинг",
+    "templateTrekDesc": "Треккинговые ботинки, мембранная куртка, аптечка, фонарик",
+    "templateWinter": "Зимний город",
+    "templateWinterDesc": "Термобельё, тёплая куртка, перчатки, шарф, зонт",
+    "itemsAdded": "пунктов добавлено из шаблона"
+  },
+  "place": {
+    "drawerTitle": "Информация о месте",
+    "close": "Закрыть",
+    "address": "Адрес",
+    "estimatedCost": "Ориент. стоимость",
+    "duration": "Время визита",
+    "minutes": "мин",
+    "rating": "Оценка",
+    "notes": "Заметки",
+    "links": "Ссылки",
+    "photos": "Фотографии и медиа",
+    "documents": "Ваучеры и документы",
+    "uploadDropzone": "Перетащите фото или PDF ваучеры сюда, либо нажмите для выбора",
+    "uploadSizeLimit": "JPG, PNG, WEBP до 10 МБ • PDF до 25 МБ",
+    "uploading": "Загрузка...",
+    "privateBadge": "Личное",
+    "publicBadge": "Публичное",
+    "openMap": "Показать на карте",
+    "viewLightbox": "Нажмите для увеличения"
+  },
+  "share": {
+    "title": "Маршрут поездки",
+    "readOnlyBadge": "Режим просмотра",
+    "copyToMyTrips": "Скопировать в мои поездки",
+    "copying": "Копирование...",
+    "copySuccess": "Маршрут успешно скопирован в ваши поездки!",
+    "copyLoginRequired": "Войдите или зарегистрируйтесь, чтобы скопировать этот маршрут в свой аккаунт",
+    "daysCount": "Дней",
+    "placesCount": "Точек",
+    "byAuthor": "Автор",
+    "privateNoteNotice": "Личные расходы и бронирования скрыты в целях конфиденциальности"
+  },
+  "distance": {
+    "walk": "пешком",
+    "drive": "на авто",
+    "km": "км",
+    "m": "м"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "logout": "Выйти",
+    "email": "Email",
+    "password": "Пароль",
+    "name": "Имя"
+  }
+}

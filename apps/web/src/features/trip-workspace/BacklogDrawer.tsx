@@ -7,6 +7,7 @@ import { Bookmark } from "lucide-react";
 import { PlaceRef } from "@/entities/trip";
 import { GlassPanel } from "@/shared/ui/GlassPanel";
 import { DraggablePlaceItem } from "./dnd/DraggablePlaceItem";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 
 interface BacklogDrawerProps {
   items: PlaceRef[];
@@ -15,6 +16,7 @@ interface BacklogDrawerProps {
 }
 
 export function BacklogDrawer({ items, isOpen }: BacklogDrawerProps) {
+  const { t, plural } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({
     id: "droppable-backlog",
   });
@@ -27,11 +29,15 @@ export function BacklogDrawer({ items, isOpen }: BacklogDrawerProps) {
         <div className="flex items-center gap-2">
           <Bookmark className="w-4 h-4 text-sky-400" />
           <h3 className="font-semibold text-xs uppercase tracking-wider text-sky-400">
-            Trip Backlog (Unassigned Places)
+            {t("trip.backlogTitle")}
           </h3>
         </div>
         <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-semibold">
-          {items.length} places
+          {plural(items.length, {
+            one: "place",
+            few: "places",
+            many: "places",
+          })}
         </span>
       </div>
 
@@ -43,7 +49,7 @@ export function BacklogDrawer({ items, isOpen }: BacklogDrawerProps) {
       >
         {items.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
-            Drag places here to hold them in backlog
+            {t("trip.backlogEmpty")}
           </div>
         ) : (
           <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>

@@ -130,66 +130,17 @@ const MOCK_PLACES: Place[] = [
     durationMinutes: 150,
     estimatedCost: 0,
   },
-  {
-    id: "pl-eiffel-tower",
-    name: "Eiffel Tower",
-    category: "sight",
-    status: "visited",
-    lat: 48.8584,
-    lng: 2.2945,
-    city: "Paris",
-    country: "France",
-    countryCode: "FRA",
-    rating: 4.7,
-    notes: "Visited at night during champagne sparkle illumination.",
-  },
-  {
-    id: "pl-colosseum",
-    name: "Colosseum & Roman Forum",
-    category: "sight",
-    status: "visited",
-    lat: 41.8902,
-    lng: 12.4922,
-    city: "Rome",
-    country: "Italy",
-    countryCode: "ITA",
-    rating: 4.8,
-  },
-  {
-    id: "pl-golden-gate",
-    name: "Golden Gate Bridge Overlook",
-    category: "nature",
-    status: "visited",
-    lat: 37.8199,
-    lng: -122.4783,
-    city: "San Francisco",
-    country: "USA",
-    countryCode: "USA",
-    rating: 4.9,
-  },
-  {
-    id: "pl-wat-arun",
-    name: "Wat Arun (Temple of Dawn)",
-    category: "sight",
-    status: "visited",
-    lat: 13.7437,
-    lng: 100.4889,
-    city: "Bangkok",
-    country: "Thailand",
-    countryCode: "THA",
-    rating: 4.7,
-  },
 ];
 
 let MOCK_TRIPS: Trip[] = [
   {
     id: "trip-japan-2026",
-    title: "Japan Autumn Odyssey",
-    slug: "japan-autumn-2026",
-    description: "Tokyo neon alleys, historic Asakusa, modern digital art, and Kyoto mountain shrines.",
+    title: "Tokyo Highlights & Culinary Adventure",
+    slug: "tokyo-adventure-2026",
+    description: "Cherry blossom season, neon lights, ancient temples, and ramen crawls across Tokyo.",
     status: "active",
-    startDate: "2026-11-12",
-    endDate: "2026-11-19",
+    startDate: "2026-04-02",
+    endDate: "2026-04-10",
     coverImageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=1200&q=80",
     budgetLimit: 2800,
     currency: "USD",
@@ -200,49 +151,47 @@ let MOCK_TRIPS: Trip[] = [
         id: "day-1",
         tripId: "trip-japan-2026",
         dayNumber: 1,
-        date: "2026-11-12",
-        title: "Historical East Tokyo & Skytree",
+        date: "2026-04-02",
+        title: "Asakusa Temples & Skytree Sunset",
         places: [
           {
-            id: "ref-1-1",
+            id: "it-1",
             placeId: "pl-sensoji",
-            name: "Senso-ji Ancient Temple",
+            name: "Senso-ji Temple",
             category: "sight",
             lat: 35.714765,
             lng: 139.796655,
-            position: "a0",
             dayId: "day-1",
+            position: "a0",
             durationMinutes: 75,
             cost: 10,
-            notes: "Morning stroll before crowds arrive.",
-            transitToNext: { mode: "walk", durationMinutes: 6, distanceKm: 0.4 },
+            notes: "Wear slip-on shoes for temple hall entrance.",
           },
           {
-            id: "ref-1-2",
+            id: "it-2",
             placeId: "pl-ichiran-asakusa",
             name: "Ichiran Ramen Asakusa",
             category: "food",
             lat: 35.7121,
             lng: 139.7984,
-            position: "a1",
             dayId: "day-1",
+            position: "a1",
             durationMinutes: 45,
             cost: 18,
-            notes: "Lunch stop for tonkotsu refill.",
-            transitToNext: { mode: "transit", durationMinutes: 14, distanceKm: 1.8 },
+            notes: "Order extra chashu pork and rich garlic broth level.",
           },
           {
-            id: "ref-1-3",
+            id: "it-3",
             placeId: "pl-tokyo-skytree",
-            name: "Tokyo Skytree & Solamachi",
+            name: "Tokyo Skytree",
             category: "sight",
             lat: 35.710063,
             lng: 139.8107,
-            position: "a2",
             dayId: "day-1",
+            position: "a2",
             durationMinutes: 90,
             cost: 32,
-            notes: "Sunset panoramic deck at 350m.",
+            notes: "Observation deck fast-pass slot booked for 17:30 sunset.",
           },
         ],
       },
@@ -250,150 +199,64 @@ let MOCK_TRIPS: Trip[] = [
         id: "day-2",
         tripId: "trip-japan-2026",
         dayNumber: 2,
-        date: "2026-11-13",
-        title: "Digital Art & Shibuya Heights",
+        date: "2026-04-03",
+        title: "Digital Art & Waterfront Scenery",
         places: [
           {
-            id: "ref-2-1",
+            id: "it-4",
             placeId: "pl-teamlab-planets",
             name: "teamLab Planets TOKYO",
             category: "sight",
             lat: 35.6491,
             lng: 139.7898,
-            position: "a0",
             dayId: "day-2",
+            position: "b0",
             durationMinutes: 120,
             cost: 40,
-            notes: "Barefoot immersive museum.",
-            transitToNext: { mode: "transit", durationMinutes: 28, distanceKm: 9.2 },
-          },
-          {
-            id: "ref-2-2",
-            placeId: "pl-shibuya-sky",
-            name: "SHIBUYA SKY Observation Deck",
-            category: "sight",
-            lat: 35.6586,
-            lng: 139.7013,
-            position: "a1",
-            dayId: "day-2",
-            durationMinutes: 90,
-            cost: 25,
-            notes: "Scramble crossing bird-eye viewpoint.",
-          },
-        ],
-      },
-      {
-        id: "day-3",
-        tripId: "trip-japan-2026",
-        dayNumber: 3,
-        date: "2026-11-14",
-        title: "Kyoto Shinkansen & Torii Gates",
-        places: [
-          {
-            id: "ref-3-1",
-            placeId: "pl-fushimi-inari",
-            name: "Fushimi Inari Taisha",
-            category: "nature",
-            lat: 34.9671,
-            lng: 135.7727,
-            position: "a0",
-            dayId: "day-3",
-            durationMinutes: 150,
-            cost: 0,
-            notes: "Hike up to Yotsutsuji intersection for Kyoto city view.",
+            notes: "Water mirror room: bare feet required.",
           },
         ],
       },
     ],
     backlog: [
       {
-        id: "ref-bl-1",
-        placeId: "pl-harajuku",
-        name: "Takeshita Street & Meiji Jingu",
+        id: "it-bk-1",
+        placeId: "pl-shibuya-sky",
+        name: "SHIBUYA SKY",
         category: "sight",
-        lat: 35.6702,
-        lng: 139.7027,
-        position: "b0",
+        lat: 35.6586,
+        lng: 139.7013,
         dayId: null,
-        durationMinutes: 80,
-        cost: 15,
-        notes: "Crepes + serene forest shrine.",
+        position: "bk0",
+        durationMinutes: 90,
+        cost: 25,
+        notes: "Best night view over the scramble crossing.",
       },
       {
-        id: "ref-bl-2",
-        placeId: "pl-tsukiji",
-        name: "Tsukiji Outer Market Food Crawl",
-        category: "food",
-        lat: 35.6655,
-        lng: 139.7708,
-        position: "b1",
+        id: "it-bk-2",
+        placeId: "pl-fushimi-inari",
+        name: "Fushimi Inari Taisha",
+        category: "nature",
+        lat: 34.9671,
+        lng: 135.7727,
         dayId: null,
-        durationMinutes: 90,
-        cost: 35,
-        notes: "Tamagoyaki, fresh uni, and wagyu skewers.",
+        position: "bk1",
+        durationMinutes: 150,
+        cost: 0,
+        notes: "Early morning hike before crowds arrive.",
       },
     ],
     expenses: [
-      {
-        id: "exp-1",
-        tripId: "trip-japan-2026",
-        dayId: "day-1",
-        placeId: "pl-tokyo-skytree",
-        title: "Skytree FastPass Admission (x2)",
-        amount: 64,
-        currency: "USD",
-        category: "activity",
-        paidAt: "2026-11-12",
-      },
-      {
-        id: "exp-2",
-        tripId: "trip-japan-2026",
-        dayId: "day-1",
-        placeId: "pl-ichiran-asakusa",
-        title: "Ichiran Ramen bowls + matcha beer",
-        amount: 36,
-        currency: "USD",
-        category: "food",
-        paidAt: "2026-11-12",
-      },
-      {
-        id: "exp-3",
-        tripId: "trip-japan-2026",
-        dayId: null,
-        placeId: null,
-        title: "Tokyo Bay Hotel 4 nights",
-        amount: 720,
-        currency: "USD",
-        category: "stay",
-        paidAt: "2026-10-20",
-      },
-      {
-        id: "exp-4",
-        tripId: "trip-japan-2026",
-        dayId: null,
-        placeId: null,
-        title: "7-Day Japan Rail Pass",
-        amount: 380,
-        currency: "USD",
-        category: "transport",
-        paidAt: "2026-10-25",
-      },
-      {
-        id: "exp-5",
-        tripId: "trip-japan-2026",
-        dayId: "day-2",
-        placeId: "pl-teamlab-planets",
-        title: "teamLab Planets entry passes",
-        amount: 80,
-        currency: "USD",
-        category: "activity",
-        paidAt: "2026-11-13",
-      },
+      { id: "exp-1", tripId: "trip-japan-2026", category: "stay", title: "Asakusa View Hotel (4 nights)", amount: 580, currency: "USD", paidAt: "2026-04-02" },
+      { id: "exp-2", tripId: "trip-japan-2026", category: "activity", title: "Tokyo Skytree Combo Tickets", amount: 64, currency: "USD", paidAt: "2026-04-02" },
+      { id: "exp-3", tripId: "trip-japan-2026", category: "food", title: "Ichiran Ramen dinner", amount: 36, currency: "USD", paidAt: "2026-04-02" },
+      { id: "exp-4", tripId: "trip-japan-2026", category: "activity", title: "teamLab Planets tickets (2p)", amount: 80, currency: "USD", paidAt: "2026-04-03" },
+      { id: "exp-5", tripId: "trip-japan-2026", category: "transport", title: "Suica IC Card top-up", amount: 100, currency: "USD", paidAt: "2026-04-02" },
     ],
     checklists: [
-      { id: "chk-1", tripId: "trip-japan-2026", section: "pre-flight", title: "Fill Visit Japan Web customs QR code", completed: true },
-      { id: "chk-2", tripId: "trip-japan-2026", section: "pre-flight", title: "Order e-SIM data package (10GB)", completed: true },
-      { id: "chk-3", tripId: "trip-japan-2026", section: "pre-flight", title: "Confirm travel insurance certificate", completed: true },
+      { id: "chk-1", tripId: "trip-japan-2026", section: "pre-flight", title: "Japan Visit Web immigration & customs QR", completed: true },
+      { id: "chk-2", tripId: "trip-japan-2026", section: "pre-flight", title: "Passport valid 6+ months", completed: true },
+      { id: "chk-3", tripId: "trip-japan-2026", section: "pre-flight", title: "eSIM activation confirmed", completed: false },
       { id: "chk-4", tripId: "trip-japan-2026", section: "packing", title: "Universal plug adapter Type A/B", completed: true },
       { id: "chk-5", tripId: "trip-japan-2026", section: "packing", title: "Comfortable walking sneakers (20k steps/day)", completed: true },
       { id: "chk-6", tripId: "trip-japan-2026", section: "packing", title: "Coin purse for 100/500 yen coins", completed: false },
@@ -401,30 +264,22 @@ let MOCK_TRIPS: Trip[] = [
       { id: "chk-8", tripId: "trip-japan-2026", section: "buy-on-site", title: "Buy 7-Eleven egg salad sandwich on arrival", completed: false },
     ],
   },
-  {
-    id: "trip-amalfi-2026",
-    title: "Amalfi Coast & Rome Escapade",
-    slug: "amalfi-roadtrip",
-    description: "Cliffside coastal roads, limoncello tasting, and ancient Roman history.",
-    status: "upcoming",
-    startDate: "2026-09-04",
-    endDate: "2026-09-12",
-    coverImageUrl: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=1200&q=80",
-    budgetLimit: 3400,
-    currency: "EUR",
-    countries: ["Italy"],
-    cities: ["Rome", "Positano", "Capri"],
-    days: [],
-    backlog: [],
-    expenses: [],
-    checklists: [],
-  },
 ];
+
+export interface PresignUploadPayload {
+  filename: string;
+  contentType: string;
+  fileSize: number;
+  visibility: "public" | "private";
+  placeId?: string;
+  dayId?: string;
+  ownerType?: "trip_cover" | "place" | "day";
+}
 
 export const apiClient = {
   async getGeoStats(): Promise<GeoStats> {
     try {
-      const res = await fetch("/api/geo/stats");
+      const res = await fetch("/api/v1/geo/stats");
       if (res.ok) return await res.json();
     } catch {}
     return MOCK_GEO_STATS;
@@ -432,7 +287,7 @@ export const apiClient = {
 
   async getPlaces(): Promise<Place[]> {
     try {
-      const res = await fetch("/api/places");
+      const res = await fetch("/api/v1/geo/places");
       if (res.ok) return await res.json();
     } catch {}
     return MOCK_PLACES;
@@ -440,7 +295,7 @@ export const apiClient = {
 
   async getTrips(): Promise<Trip[]> {
     try {
-      const res = await fetch("/api/trips");
+      const res = await fetch("/api/v1/trips");
       if (res.ok) return await res.json();
     } catch {}
     return MOCK_TRIPS;
@@ -448,16 +303,27 @@ export const apiClient = {
 
   async getTrip(tripId: string): Promise<Trip | null> {
     try {
-      const res = await fetch(`/api/trips/${tripId}`);
+      const res = await fetch(`/api/v1/trips/${tripId}`);
       if (res.ok) return await res.json();
     } catch {}
     return MOCK_TRIPS.find((t) => t.id === tripId) || MOCK_TRIPS[0];
   },
 
+  async updateTripCover(tripId: string, coverUrl: string): Promise<void> {
+    const trip = MOCK_TRIPS.find((t) => t.id === tripId);
+    if (trip) {
+      trip.coverImageUrl = coverUrl;
+    }
+  },
+
   async getPublicShare(slug: string): Promise<PublicTripView | null> {
     try {
-      const res = await fetch(`/api/share/${slug}`);
-      if (res.ok) return await res.json();
+      const res = await fetch(`/api/v1/share/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.trip) return data.trip;
+        return data;
+      }
     } catch {}
     const trip = MOCK_TRIPS.find((t) => t.slug === slug) || MOCK_TRIPS[0];
     if (!trip) return null;
@@ -488,6 +354,152 @@ export const apiClient = {
         })),
       })),
     };
+  },
+
+  async clonePublicTrip(slug: string): Promise<Trip> {
+    try {
+      const res = await fetch(`/api/v1/share/${slug}/clone`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.trip;
+      }
+    } catch {}
+
+    // Local fallback clone
+    const orig = MOCK_TRIPS.find((t) => t.slug === slug) || MOCK_TRIPS[0];
+    const newId = `trip-cloned-${Date.now()}`;
+    const cloned: Trip = {
+      ...JSON.parse(JSON.stringify(orig)),
+      id: newId,
+      title: `${orig.title} (Copy)`,
+      budgetLimit: 0,
+      expenses: [],
+      slug: `copy-${slug}-${Date.now()}`,
+    };
+    MOCK_TRIPS.push(cloned);
+    return cloned;
+  },
+
+  async createPresignedUpload(tripId: string, payload: PresignUploadPayload): Promise<{
+    uploadUrl: string;
+    downloadUrl: string;
+    attachmentId: string;
+  }> {
+    try {
+      const res = await fetch(`/api/v1/trips/${tripId}/attachments/presign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+
+    // Mock presign fallback
+    const mockId = `att-${Date.now()}`;
+    return {
+      uploadUrl: `http://localhost:9000/atlasflow-media/trips/${tripId}/${mockId}?upload=true`,
+      downloadUrl: URL.createObjectURL(new Blob(["mock content"], { type: payload.contentType })),
+      attachmentId: mockId,
+    };
+  },
+
+  async uploadFileToMinIO(uploadUrl: string, file: File): Promise<void> {
+    try {
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+    } catch {
+      // In offline/mock mode, simulate network upload delay
+      await new Promise((r) => setTimeout(r, 600));
+    }
+  },
+
+  async confirmUpload(tripId: string, attachmentId: string): Promise<any> {
+    try {
+      const res = await fetch(`/api/v1/trips/${tripId}/attachments/${attachmentId}/confirm`, {
+        method: "POST",
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+    return { id: attachmentId, isReady: true };
+  },
+
+  async applyChecklistTemplate(tripId: string, templateKey: string): Promise<ChecklistItem[]> {
+    try {
+      const res = await fetch(`/api/v1/trips/${tripId}/checklist/templates/${templateKey}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.items;
+      }
+    } catch {}
+
+    // Local fallback for starter templates
+    const templates: Record<string, { section: "pre-flight" | "packing" | "buy-on-site"; title: string }[]> = {
+      digital_nomad: [
+        { section: "pre-flight", title: "Passport & Visa" },
+        { section: "pre-flight", title: "Travel insurance policy" },
+        { section: "pre-flight", title: "Offline maps & boarding pass downloaded" },
+        { section: "packing", title: "Laptop & charger" },
+        { section: "packing", title: "Universal power adapter" },
+        { section: "packing", title: "Power bank 20000mAh" },
+        { section: "packing", title: "Noise-canceling headphones" },
+        { section: "packing", title: "Backup credit / debit cards" },
+        { section: "buy-on-site", title: "Local SIM / eSIM data plan" },
+        { section: "buy-on-site", title: "Local cash / ATM emergency" },
+      ],
+      beach_sun: [
+        { section: "pre-flight", title: "Hotel / resort confirmation" },
+        { section: "packing", title: "Swimwear & beach towel" },
+        { section: "packing", title: "Sunscreen SPF 50+ & lip balm" },
+        { section: "packing", title: "Sunglasses & sun hat" },
+        { section: "packing", title: "Waterproof phone pouch" },
+        { section: "buy-on-site", title: "After-sun aloe vera gel" },
+      ],
+      mountain_trekking: [
+        { section: "pre-flight", title: "Trail permits & offline topo maps" },
+        { section: "pre-flight", title: "Rescue insurance coverage" },
+        { section: "packing", title: "Trail hiking boots (broken in)" },
+        { section: "packing", title: "Waterproof shell jacket" },
+        { section: "packing", title: "First aid kit & blister pads" },
+        { section: "packing", title: "Headlamp with extra batteries" },
+        { section: "buy-on-site", title: "Trail energy bars & electrolytes" },
+      ],
+      winter_city: [
+        { section: "pre-flight", title: "Museum reservation slots" },
+        { section: "packing", title: "Thermal base layers & socks" },
+        { section: "packing", title: "Insulated winter jacket" },
+        { section: "packing", title: "Gloves, scarf & beanie" },
+        { section: "packing", title: "Compact storm umbrella" },
+        { section: "buy-on-site", title: "City transit card" },
+      ],
+    };
+
+    const trip = MOCK_TRIPS.find((t) => t.id === tripId);
+    if (!trip) return [];
+
+    const itemsToAdd = templates[templateKey] || templates.digital_nomad;
+    const existingTitles = new Set(trip.checklists.map((c) => c.title.toLowerCase()));
+
+    for (const item of itemsToAdd) {
+      if (!existingTitles.has(item.title.toLowerCase())) {
+        trip.checklists.push({
+          id: `chk-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          tripId,
+          section: item.section,
+          title: item.title,
+          completed: false,
+        });
+      }
+    }
+    return [...trip.checklists];
   },
 
   async reorderPlace(tripId: string, itemId: string, targetDayId: string | null, newIndex: number): Promise<Trip> {

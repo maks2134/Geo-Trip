@@ -44,7 +44,9 @@ type TripRepository interface {
 	CreateAttachment(ctx context.Context, a domain.Attachment) error
 	GetAttachment(ctx context.Context, id string) (domain.Attachment, error)
 	ListAttachments(ctx context.Context, tripID string) ([]domain.Attachment, error)
+	ListAttachmentsFiltered(ctx context.Context, tripID string, placeID, dayID *string, visibility *domain.AttachmentVisibility) ([]domain.Attachment, error)
 	ConfirmAttachmentReady(ctx context.Context, id string) error
+	DeleteAttachment(ctx context.Context, tripID, id string) error
 
 	// Share
 	CreateShare(ctx context.Context, s domain.ShareRecord) error
@@ -55,6 +57,7 @@ type TripRepository interface {
 type StoragePort interface {
 	PresignPut(ctx context.Context, key, contentType string, expires time.Duration) (string, error)
 	PresignGet(ctx context.Context, key string, expires time.Duration) (string, error)
+	DeleteObject(ctx context.Context, key string) error
 }
 
 type Clock interface {

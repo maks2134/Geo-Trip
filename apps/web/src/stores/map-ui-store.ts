@@ -2,10 +2,14 @@ import { create } from "zustand";
 import { PinCategory, PinStatus } from "@/entities/place";
 
 export type WorkspaceTab = "itinerary" | "budget" | "checklists";
+export type ThemeMode = "system" | "dark" | "light";
+export type BasemapMode = "streets" | "satellite";
 
 interface MapUIState {
   mode: "world" | "trip";
-  theme: "dark" | "light";
+  themeMode: ThemeMode;
+  theme: "dark" | "light"; // computed active theme
+  basemap: BasemapMode;
   selectedTripId: string;
   selectedDayId: string | null;
   drawerPlaceId: string | null;
@@ -14,10 +18,13 @@ interface MapUIState {
   isBacklogOpen: boolean;
   statusFilters: PinStatus[];
   categoryFilters: PinCategory[];
+  satelliteErrorToast: boolean;
 
   setMode: (mode: "world" | "trip") => void;
-  setTheme: (theme: "dark" | "light") => void;
-  toggleTheme: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setBasemap: (basemap: BasemapMode) => void;
+  toggleBasemap: () => void;
+  setSatelliteErrorToast: (show: boolean) => void;
   setSelectedTripId: (tripId: string) => void;
   setSelectedDayId: (dayId: string | null) => void;
   openPlaceDrawer: (placeId: string) => void;
@@ -29,9 +36,19 @@ interface MapUIState {
   resetFilters: () => void;
 }
 
+function resolveActiveTheme(mode: ThemeMode): "dark" | "light" {
+  if (mode === "dark" || mode === "light") return mode;
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return "dark";
+}
+
 export const useMapUIStore = create<MapUIState>((set) => ({
   mode: "world",
+  themeMode: "system",
   theme: "dark",
+  basemap: "streets",
   selectedTripId: "trip-japan-2026",
   selectedDayId: "day-1",
   drawerPlaceId: null,
@@ -40,22 +57,32 @@ export const useMapUIStore = create<MapUIState>((set) => ({
   isBacklogOpen: false,
   statusFilters: ["visited", "planned", "wishlist"],
   categoryFilters: ["food", "stay", "sight", "nature", "transport"],
+  satelliteErrorToast: false,
 
   setMode: (mode) => set({ mode }),
-  setTheme: (theme) => {
+  setThemeMode: (themeMode) => {
+    const active = resolveActiveTheme(themeMode);
     if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.setAttribute("data-theme", active);
+      localStorage.setItem("atlasflow_theme", themeMode);
     }
-    set({ theme });
+    set({ themeMode, theme: active });
   },
-  toggleTheme: () =>
-    set((state) => {
-      const nextTheme = state.theme === "dark" ? "light" : "dark";
-      if (typeof document !== "undefined") {
-        document.documentElement.setAttribute("data-theme", nextTheme);
+  setBasemap: (basemap) => {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("atlasflow_basemap", basemap);
+    }
+    set({ basemap });
+  },
+  toggleBasemap: () =>
+    set((s) => {
+      const next = s.basemap === "streets" ? "satellite" : "streets";
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("atlasflow_basemap", next);
       }
-      return { theme: nextTheme };
+      return { basemap: next };
     }),
+  setSatelliteErrorToast: (satelliteErrorToast) => set({ satelliteErrorToast }),
   setSelectedTripId: (selectedTripId) =>
     set({ selectedTripId, selectedDayId: "day-1" }),
   setSelectedDayId: (selectedDayId) => set({ selectedDayId }),

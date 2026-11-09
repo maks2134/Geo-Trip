@@ -47,3 +47,18 @@ type PublicTrip struct {
 	Attachments      []PublicAttachmentMeta `json:"attachments"`
 	OwnerDisplayName string                 `json:"owner_display_name"`
 }
+
+type ClonedTripSummary struct {
+	ID          string    `json:"id"`
+	OwnerID     string    `json:"owner_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	StartDate   time.Time `json:"start_date"`
+	EndDate     time.Time `json:"end_date"`
+	Status      string    `json:"status"`
+	CoverURL    string    `json:"cover_url"`
+	Currency    string    `json:"currency"`
+	BudgetLimit float64   `json:"budget_limit"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}

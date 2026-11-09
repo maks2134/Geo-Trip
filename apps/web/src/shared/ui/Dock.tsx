@@ -1,13 +1,24 @@
 "use client";
 
 import React from "react";
-import { Globe, MapPin, Moon, Sun } from "lucide-react";
-import { useMapUIStore } from "@/stores/map-ui-store";
+import { Globe, MapPin, Moon, Sun, Laptop } from "lucide-react";
+import { useMapUIStore, ThemeMode } from "@/stores/map-ui-store";
 import { GlassPanel } from "./GlassPanel";
 import { cn } from "@/shared/lib/utils";
+import { useTranslation, Locale } from "@/shared/i18n/i18n-context";
 
 export function Dock() {
-  const { mode, setMode, theme, toggleTheme } = useMapUIStore();
+  const { mode, setMode, themeMode, theme, setThemeMode } = useMapUIStore();
+  const { t, locale, setLocale } = useTranslation();
+
+  const cycleTheme = () => {
+    const next: Record<ThemeMode, ThemeMode> = {
+      system: "light",
+      light: "dark",
+      dark: "system",
+    };
+    setThemeMode(next[themeMode]);
+  };
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
@@ -22,7 +33,7 @@ export function Dock() {
           )}
         >
           <Globe className="w-4 h-4" />
-          <span>World Map</span>
+          <span>{t("nav.worldMap")}</span>
         </button>
 
         <button
@@ -35,18 +46,44 @@ export function Dock() {
           )}
         >
           <MapPin className="w-4 h-4" />
-          <span>Trip Planner</span>
+          <span>{t("nav.trips")}</span>
         </button>
 
         <div className="h-5 w-px bg-white/10 mx-1" />
 
+        {/* Language Switcher Pill (MH-A) */}
+        <div className="flex items-center bg-white/5 rounded-full p-0.5 border border-white/10 text-xs font-semibold">
+          <button
+            onClick={() => setLocale("en")}
+            className={cn(
+              "px-2.5 py-1 rounded-full transition-all",
+              locale === "en" ? "bg-[var(--accent)] text-white shadow" : "text-[var(--text-muted)] hover:text-[var(--text)]"
+            )}
+          >
+            EN
+          </button>
+          <button
+            onClick={() => setLocale("ru")}
+            className={cn(
+              "px-2.5 py-1 rounded-full transition-all",
+              locale === "ru" ? "bg-[var(--accent)] text-white shadow" : "text-[var(--text-muted)] hover:text-[var(--text)]"
+            )}
+          >
+            RU
+          </button>
+        </div>
+
+        {/* Theme Mode Toggle (MH-B) */}
         <button
-          onClick={toggleTheme}
-          title="Toggle Dark/Light Mode"
-          aria-label="Toggle Dark/Light Mode"
-          className="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 transition-colors"
+          onClick={cycleTheme}
+          title={`Theme: ${themeMode} (${theme})`}
+          aria-label="Cycle theme: System -> Light -> Dark"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 transition-colors"
         >
-          {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
+          {themeMode === "system" && <Laptop className="w-4 h-4 text-sky-400" />}
+          {themeMode === "light" && <Sun className="w-4 h-4 text-amber-400" />}
+          {themeMode === "dark" && <Moon className="w-4 h-4 text-indigo-400" />}
+          <span className="capitalize">{t(`theme.${themeMode}`)}</span>
         </button>
       </GlassPanel>
     </div>

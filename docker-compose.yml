@@ -33,6 +33,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "http://localhost:3000,http://127.0.0.1:3000"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -44,9 +45,9 @@ services:
     networks:
       - atlasflow-net
 
-  minio-init:
+  minio-create-bucket:
     image: minio/mc:latest
-    container_name: atlasflow-minio-init
+    container_name: atlasflow-minio-create-bucket
     depends_on:
       minio:
         condition: service_healthy
@@ -57,6 +58,23 @@ services:
       done;
       /usr/bin/mc mb --ignore-existing local/atlasflow-media;
       /usr/bin/mc anonymous set download local/atlasflow-media/public;
+      cat << 'EOF' > /tmp/cors.xml
+      <CORSConfiguration>
+        <CORSRule>
+          <AllowedOrigin>http://localhost:3000</AllowedOrigin>
+          <AllowedOrigin>http://127.0.0.1:3000</AllowedOrigin>
+          <AllowedMethod>GET</AllowedMethod>
+          <AllowedMethod>PUT</AllowedMethod>
+          <AllowedMethod>HEAD</AllowedMethod>
+          <AllowedMethod>DELETE</AllowedMethod>
+          <AllowedMethod>POST</AllowedMethod>
+          <AllowedHeader>*</AllowedHeader>
+          <ExposeHeader>ETag</ExposeHeader>
+          <MaxAgeSeconds>3600</MaxAgeSeconds>
+        </CORSRule>
+      </CORSConfiguration>
+      EOF
+      /usr/bin/mc cors set local/atlasflow-media /tmp/cors.xml || true;
       exit 0;
       "
     networks:
@@ -108,11 +126,16 @@ services:
       PORT: "8081"
       DATABASE_URL: "postgres://atlasflow:atlasflow_secret@postgres:5432/atlasflow?sslmode=disable"
       S3_ENDPOINT: "http://minio:9000"
+      S3_PUBLIC_ENDPOINT: "http://localhost:9000"
       S3_BUCKET: "atlasflow-media"
+      S3_ACCESS_KEY: "minioadmin"
+      S3_SECRET_KEY: "minioadmin"
+      S3_USE_SSL: "false"
+      S3_REGION: "us-east-1"
     depends_on:
       postgres:
         condition: service_healthy
-      minio-init:
+      minio-create-bucket:
         condition: service_completed_successfully
     networks:
       - atlasflow-net

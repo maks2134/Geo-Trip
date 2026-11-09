@@ -303,13 +303,38 @@ func (r *MemoryTripRepo) GetAttachment(ctx context.Context, id string) (domain.A
 }
 
 func (r *MemoryTripRepo) ListAttachments(ctx context.Context, tripID string) ([]domain.Attachment, error) {
+	return r.ListAttachmentsFiltered(ctx, tripID, nil, nil, nil)
+}
+
+func (r *MemoryTripRepo) ListAttachmentsFiltered(
+	ctx context.Context,
+	tripID string,
+	placeID, dayID *string,
+	visibility *domain.AttachmentVisibility,
+) ([]domain.Attachment, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	var res []domain.Attachment
 	for _, a := range r.attachments {
-		if a.TripID == tripID {
-			res = append(res, a)
+		if a.TripID != tripID {
+			continue
 		}
+		if placeID != nil {
+			if a.PlaceID == nil || *a.PlaceID != *placeID {
+				continue
+			}
+		}
+		if dayID != nil {
+			if a.DayID == nil || *a.DayID != *dayID {
+				continue
+			}
+		}
+		if visibility != nil {
+			if a.Visibility != *visibility {
+				continue
+			}
+		}
+		res = append(res, a)
 	}
 	return res, nil
 }
@@ -323,6 +348,17 @@ func (r *MemoryTripRepo) ConfirmAttachmentReady(ctx context.Context, id string) 
 	}
 	a.IsReady = true
 	r.attachments[id] = a
+	return nil
+}
+
+func (r *MemoryTripRepo) DeleteAttachment(ctx context.Context, tripID, id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	a, ok := r.attachments[id]
+	if !ok || a.TripID != tripID {
+		return domain.ErrNotFound
+	}
+	delete(r.attachments, id)
 	return nil
 }
 

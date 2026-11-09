@@ -34,3 +34,24 @@ func (u *PublicShareUsecase) GetPublicTrip(ctx context.Context, slug string) (*d
 
 	return trip, nil
 }
+
+// ClonePublicTrip clones an active public trip into the authenticated user's workspace.
+func (u *PublicShareUsecase) ClonePublicTrip(ctx context.Context, slug, targetOwnerID string) (*domain.ClonedTripSummary, error) {
+	cleanSlug := strings.TrimSpace(slug)
+	if cleanSlug == "" || len(cleanSlug) < 3 || len(cleanSlug) > 128 {
+		return nil, domain.ErrTripNotFound
+	}
+	if strings.TrimSpace(targetOwnerID) == "" {
+		return nil, domain.ErrUnauthorized
+	}
+
+	trip, err := u.tripClient.ClonePublicTrip(ctx, cleanSlug, targetOwnerID)
+	if err != nil {
+		return nil, fmt.Errorf("clone trip: %w", err)
+	}
+	if trip == nil {
+		return nil, domain.ErrTripNotFound
+	}
+
+	return trip, nil
+}

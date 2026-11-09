@@ -29,6 +29,7 @@ type TokenManager interface {
 
 type PublicTripClient interface {
 	GetPublicTrip(ctx context.Context, slug string) (*domain.PublicTrip, error)
+	ClonePublicTrip(ctx context.Context, slug, targetOwnerID string) (*domain.ClonedTripSummary, error)
 }
 
 type Clock interface {

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -100,4 +101,21 @@ func (p Place) Validate() error {
 		return ErrInvalidCountryCode
 	}
 	return nil
+}
+
+// DistanceMeters computes great-circle distance between two coordinates in meters (Haversine formula).
+func DistanceMeters(a, b LatLng) float64 {
+	const earthRadius = 6371000.0 // meters
+	lat1 := a.Latitude * math.Pi / 180.0
+	lat2 := b.Latitude * math.Pi / 180.0
+	dLat := (b.Latitude - a.Latitude) * math.Pi / 180.0
+	dLng := (b.Longitude - a.Longitude) * math.Pi / 180.0
+
+	sinDLat := math.Sin(dLat / 2)
+	sinDLng := math.Sin(dLng / 2)
+
+	h := sinDLat*sinDLat + math.Cos(lat1)*math.Cos(lat2)*sinDLng*sinDLng
+	c := 2 * math.Atan2(math.Sqrt(h), math.Sqrt(1-h))
+
+	return earthRadius * c
 }

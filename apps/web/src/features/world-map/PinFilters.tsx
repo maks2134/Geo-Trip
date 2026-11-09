@@ -6,34 +6,36 @@ import { PinCategory, PinStatus } from "@/entities/place";
 import { useMapUIStore } from "@/stores/map-ui-store";
 import { GlassPanel } from "@/shared/ui/GlassPanel";
 import { cn } from "@/shared/lib/utils";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 
 export function PinFilters() {
   const { statusFilters, categoryFilters, toggleStatusFilter, toggleCategoryFilter, resetFilters } =
     useMapUIStore();
+  const { t } = useTranslation();
 
-  const statuses: { id: PinStatus; label: string; icon: React.ReactNode; color: string }[] = [
-    { id: "visited", label: "Visited", icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-amber-400" },
-    { id: "planned", label: "Planned", icon: <Calendar className="w-3.5 h-3.5" />, color: "text-blue-400" },
-    { id: "wishlist", label: "Wishlist", icon: <Bookmark className="w-3.5 h-3.5" />, color: "text-pink-400" },
+  const statuses: { id: PinStatus; labelKey: string; icon: React.ReactNode; color: string }[] = [
+    { id: "visited", labelKey: "filters.visited", icon: <CheckCircle2 className="w-3.5 h-3.5" />, color: "text-amber-400" },
+    { id: "planned", labelKey: "filters.planned", icon: <Calendar className="w-3.5 h-3.5" />, color: "text-blue-400" },
+    { id: "wishlist", labelKey: "filters.wishlist", icon: <Bookmark className="w-3.5 h-3.5" />, color: "text-pink-400" },
   ];
 
-  const categories: { id: PinCategory; label: string; icon: React.ReactNode }[] = [
-    { id: "sight", label: "Sights", icon: <Eye className="w-3.5 h-3.5" /> },
-    { id: "food", label: "Food", icon: <Utensils className="w-3.5 h-3.5" /> },
-    { id: "stay", label: "Stays", icon: <Hotel className="w-3.5 h-3.5" /> },
-    { id: "nature", label: "Nature", icon: <Trees className="w-3.5 h-3.5" /> },
-    { id: "transport", label: "Transit", icon: <Train className="w-3.5 h-3.5" /> },
+  const categories: { id: PinCategory; labelKey: string; icon: React.ReactNode }[] = [
+    { id: "sight", labelKey: "filters.sight", icon: <Eye className="w-3.5 h-3.5" /> },
+    { id: "food", labelKey: "filters.food", icon: <Utensils className="w-3.5 h-3.5" /> },
+    { id: "stay", labelKey: "filters.stay", icon: <Hotel className="w-3.5 h-3.5" /> },
+    { id: "nature", labelKey: "filters.nature", icon: <Trees className="w-3.5 h-3.5" /> },
+    { id: "transport", labelKey: "filters.transport", icon: <Train className="w-3.5 h-3.5" /> },
   ];
 
   return (
     <GlassPanel className="p-4 w-80 space-y-3.5">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)]">Pin Filters</span>
+        <span className="font-semibold uppercase tracking-wider text-[var(--text-muted)]">{t("filters.status")}</span>
         <button
           onClick={resetFilters}
           className="text-[11px] text-[var(--accent)] hover:underline"
         >
-          Reset All
+          {t("filters.reset")}
         </button>
       </div>
 
@@ -53,7 +55,7 @@ export function PinFilters() {
               )}
             >
               <span className={s.color}>{s.icon}</span>
-              <span>{s.label}</span>
+              <span>{t(s.labelKey)}</span>
             </button>
           );
         })}
@@ -75,7 +77,7 @@ export function PinFilters() {
               )}
             >
               {c.icon}
-              <span>{c.label}</span>
+              <span>{t(c.labelKey)}</span>
             </button>
           );
         })}

@@ -31,6 +31,9 @@ func (f *fakeStorage) PresignPut(ctx context.Context, key, contentType string, e
 func (f *fakeStorage) PresignGet(ctx context.Context, key string, exp time.Duration) (string, error) {
 	return "https://storage.local/download/" + key, nil
 }
+func (f *fakeStorage) DeleteObject(ctx context.Context, key string) error {
+	return nil
+}
 
 func setupTest(t *testing.T) (*repo.MemoryTripRepo, *TripSuite) {
 	memRepo := repo.NewMemoryTripRepo()
@@ -276,7 +279,7 @@ func TestPublicShareSanitization(t *testing.T) {
 		Visibility:  domain.AttachmentVisibilityPublic,
 	})
 	require.NoError(t, err)
-	err = suite.attachmentUsecase.ConfirmUpload(ctx, trip.ID, pubMeta.AttachmentID, "owner-1")
+	_, err = suite.attachmentUsecase.ConfirmUpload(ctx, trip.ID, pubMeta.AttachmentID, "owner-1")
 	require.NoError(t, err)
 
 	privMeta, err := suite.attachmentUsecase.CreateUpload(ctx, usecase.CreateUploadInput{
@@ -288,7 +291,7 @@ func TestPublicShareSanitization(t *testing.T) {
 		Visibility:  domain.AttachmentVisibilityPrivate,
 	})
 	require.NoError(t, err)
-	_ = suite.attachmentUsecase.ConfirmUpload(ctx, trip.ID, privMeta.AttachmentID, "owner-1")
+	_, _ = suite.attachmentUsecase.ConfirmUpload(ctx, trip.ID, privMeta.AttachmentID, "owner-1")
 
 	slug, err := suite.shareUsecase.EnableShare(ctx, trip.ID, "owner-1")
 	require.NoError(t, err)
@@ -305,4 +308,115 @@ func TestPublicShareSanitization(t *testing.T) {
 
 	_, err = suite.shareUsecase.GetPublicTripBySlug(ctx, slug)
 	assert.ErrorIs(t, err, domain.ErrShareRevoked)
+}
+
+func TestClonePublicTrip(t *testing.T) {
+	ctx := context.Background()
+	memRepo, suite := setupTest(t)
+
+	// Create original trip with places, expenses, private attachments
+	orig, err := suite.tripUsecase.CreateTrip(ctx, usecase.CreateTripInput{
+		OwnerID:     "owner-orig",
+		Title:       "Japan Discovery",
+		Description: "Cherry blossoms tour",
+		StartDate:   time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+		EndDate:     time.Date(2026, 4, 10, 0, 0, 0, 0, time.UTC),
+		CoverURL:    "https://example.com/cover.jpg",
+		Currency:    "USD",
+		BudgetLimit: 3500.0,
+	})
+	require.NoError(t, err)
+
+	day, err := suite.dayUsecase.AddDay(ctx, usecase.AddDayInput{
+		TripID: orig.ID,
+		UserID: "owner-orig",
+		Date:   orig.StartDate,
+		Title:  "Tokyo Arrival",
+	})
+	require.NoError(t, err)
+
+	cost := 50.0
+	_, err = suite.itineraryUsecase.AddPlace(ctx, usecase.AddPlaceInput{
+		TripID:          orig.ID,
+		UserID:          "owner-orig",
+		DayID:           &day.ID,
+		Place:           domain.PlaceRef{PlaceID: "tokyo-tower", Name: "Tokyo Tower", Latitude: 35.6586, Longitude: 139.7454},
+		Cost:            &cost,
+		DurationMinutes: 90,
+		Notes:           "Buy tickets in advance",
+	})
+	require.NoError(t, err)
+
+	// Add expense and private attachment
+	_, _, err = suite.budgetUsecase.AddExpense(ctx, usecase.AddExpenseInput{
+		TripID:   orig.ID,
+		UserID:   "owner-orig",
+		Amount:   150.0,
+		Currency: "USD",
+		Title:    "Hotel deposit",
+	})
+	require.NoError(t, err)
+
+	slug, err := suite.shareUsecase.EnableShare(ctx, orig.ID, "owner-orig")
+	require.NoError(t, err)
+
+	// Clone trip as guest user
+	cloned, err := suite.shareUsecase.ClonePublicTrip(ctx, slug, "guest-user-42")
+	require.NoError(t, err)
+
+	assert.Equal(t, "guest-user-42", cloned.OwnerID)
+	assert.Contains(t, cloned.Title, "Japan Discovery")
+	assert.Equal(t, 0.0, cloned.BudgetLimit, "Cloned trip must have 0 budget limit")
+
+	// Verify days and places are cloned
+	clonedDays, err := memRepo.ListDays(ctx, cloned.ID)
+	require.NoError(t, err)
+	assert.Len(t, clonedDays, 1)
+
+	clonedPlaces, err := memRepo.ListPlaceItems(ctx, cloned.ID)
+	require.NoError(t, err)
+	assert.Len(t, clonedPlaces, 1)
+	assert.Nil(t, clonedPlaces[0].Cost, "Cloned places must not leak original costs")
+	assert.Equal(t, "Buy tickets in advance", clonedPlaces[0].Notes)
+
+	// Verify no expenses were copied
+	expenses, _, err := suite.budgetUsecase.ListExpenses(ctx, cloned.ID, "guest-user-42", nil, nil)
+	require.NoError(t, err)
+	assert.Empty(t, expenses, "Cloned trip must have 0 expenses")
+}
+
+func TestChecklistTemplates(t *testing.T) {
+	ctx := context.Background()
+	_, suite := setupTest(t)
+
+	trip, err := suite.tripUsecase.CreateTrip(ctx, usecase.CreateTripInput{
+		OwnerID:   "nomad-1",
+		Title:     "Remote Work Bali",
+		StartDate: time.Now(),
+		EndDate:   time.Now().AddDate(0, 1, 0),
+	})
+	require.NoError(t, err)
+
+	items, summary, err := suite.checklistUsecase.ApplyTemplate(ctx, trip.ID, "nomad-1", "digital_nomad")
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(items), 8)
+	assert.Equal(t, int32(len(items)), summary.TotalItems)
+	assert.Equal(t, int32(0), summary.CompletedItems)
+	assert.Equal(t, 0.0, summary.ReadinessPercentage)
+}
+
+func TestAttachmentMimeAndSize(t *testing.T) {
+	// Photos: JPEG, PNG, WEBP <= 10MB
+	assert.NoError(t, domain.ValidateAttachmentMeta("image/jpeg", 9*1024*1024))
+	assert.NoError(t, domain.ValidateAttachmentMeta("image/png", 5*1024*1024))
+	assert.NoError(t, domain.ValidateAttachmentMeta("image/webp", 2*1024*1024))
+	assert.ErrorIs(t, domain.ValidateAttachmentMeta("image/jpeg", 11*1024*1024), domain.ErrFileTooLarge)
+
+	// Documents: PDF <= 25MB
+	assert.NoError(t, domain.ValidateAttachmentMeta("application/pdf", 24*1024*1024))
+	assert.ErrorIs(t, domain.ValidateAttachmentMeta("application/pdf", 26*1024*1024), domain.ErrFileTooLarge)
+
+	// Unsupported types
+	assert.ErrorIs(t, domain.ValidateAttachmentMeta("video/mp4", 1024), domain.ErrInvalidMimeType)
+	assert.ErrorIs(t, domain.ValidateAttachmentMeta("application/zip", 1024), domain.ErrInvalidMimeType)
 }

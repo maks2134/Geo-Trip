@@ -1,0 +1,49 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Run tests and build all Go services
+    cmds:
+      - task: test
+      - task: build
+
+  up:
+    desc: Start local infrastructure containers in detached mode
+    cmds:
+      - docker compose -f deploy/docker-compose.yml --env-file deploy/.env.example up -d
+
+  down:
+    desc: Stop local infrastructure containers
+    cmds:
+      - docker compose -f deploy/docker-compose.yml down
+
+  test:
+    desc: Run Go unit and integration tests across pkg, proto, and services
+    cmds:
+      - go test -v ./pkg/... ./proto/... ./services/gateway-auth/... ./services/trip-core/... ./services/geo-places/...
+
+  build:
+    desc: Compile gateway-auth, trip-core, and geo-places binaries into bin/
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/gateway-auth ./services/gateway-auth/cmd/...
+      - go build -o bin/trip-core ./services/trip-core/cmd/...
+      - go build -o bin/geo-places ./services/geo-places/cmd/...
+
+  proto:
+    desc: Generate protobuf and ConnectRPC stubs using buf
+    dir: proto
+    cmds:
+      - buf generate
+
+  dev:web:
+    desc: Start Next.js web application development server
+    dir: apps/web
+    cmds:
+      - npm run dev
+
+  build:web:
+    desc: Build Next.js web application for production
+    dir: apps/web
+    cmds:
+      - npm run build

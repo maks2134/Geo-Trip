@@ -122,6 +122,10 @@ func main() {
 	mux.Handle("GET /api/v1/share/{slug}", shareRoute)
 	mux.Handle("GET /share/{slug}", shareRoute)
 
+	// 5b. Clone Public Trip endpoint (requires authenticated user - CAND-10)
+	mux.Handle("POST /api/v1/share/{slug}/clone", authMiddleware.RequireAuth(http.HandlerFunc(shareHandler.CloneSharedTrip)))
+	mux.Handle("POST /api/v1/trips/clone-public/{slug}", authMiddleware.RequireAuth(http.HandlerFunc(shareHandler.CloneSharedTrip)))
+
 	// 6. Internal Service Proxies (protected, forwards X-User-Id)
 	if tripProxy != nil {
 		mux.Handle("/api/v1/trips/", authMiddleware.RequireAuth(tripProxy))
@@ -133,7 +137,7 @@ func main() {
 	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Connect-Protocol-Version, X-User-Agent")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Connect-Protocol-Version, X-User-Agent, Accept-Language, X-Atlas-Locale")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

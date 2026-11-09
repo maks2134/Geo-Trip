@@ -43,6 +43,7 @@ func main() {
 	port := getEnv("PORT", "8081")
 	dbURL := os.Getenv("DATABASE_URL")
 	s3Endpoint := getEnv("S3_ENDPOINT", "http://localhost:9000")
+	s3PublicEndpoint := getEnv("S3_PUBLIC_ENDPOINT", s3Endpoint)
 	s3Bucket := getEnv("S3_BUCKET", "atlasflow-media")
 
 	clock := realClock{}
@@ -76,7 +77,7 @@ func main() {
 		tripRepo = repo.NewMemoryTripRepo()
 	}
 
-	storageAdapter := storage.NewS3Storage(s3Endpoint, s3Bucket)
+	storageAdapter := storage.NewS3Storage(s3Endpoint, s3PublicEndpoint, s3Bucket)
 
 	tu := usecase.NewTripUsecase(tripRepo, clock, ids)
 	du := usecase.NewDayUsecase(tripRepo, clock, ids)

@@ -386,10 +386,40 @@ func (r *PostgresTripRepo) GetAttachment(ctx context.Context, id string) (domain
 }
 
 func (r *PostgresTripRepo) ListAttachments(ctx context.Context, tripID string) ([]domain.Attachment, error) {
-	const q = `
+	return r.ListAttachmentsFiltered(ctx, tripID, nil, nil, nil)
+}
+
+func (r *PostgresTripRepo) ListAttachmentsFiltered(
+	ctx context.Context,
+	tripID string,
+	placeID, dayID *string,
+	visibility *domain.AttachmentVisibility,
+) ([]domain.Attachment, error) {
+	q := `
 		SELECT id, trip_id, place_id, day_id, filename, content_type, file_size, storage_key, download_url, visibility, is_ready, created_at
-		FROM attachments WHERE trip_id = $1 ORDER BY created_at ASC`
-	rows, err := r.db.QueryContext(ctx, q, tripID)
+		FROM attachments WHERE trip_id = $1`
+	args := []interface{}{tripID}
+	argIdx := 2
+
+	if placeID != nil {
+		q += fmt.Sprintf(" AND place_id = $%d", argIdx)
+		args = append(args, *placeID)
+		argIdx++
+	}
+	if dayID != nil {
+		q += fmt.Sprintf(" AND day_id = $%d", argIdx)
+		args = append(args, *dayID)
+		argIdx++
+	}
+	if visibility != nil {
+		q += fmt.Sprintf(" AND visibility = $%d", argIdx)
+		args = append(args, int(*visibility))
+		argIdx++
+	}
+
+	q += " ORDER BY created_at ASC"
+
+	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -414,6 +444,12 @@ func (r *PostgresTripRepo) ListAttachments(ctx context.Context, tripID string) (
 func (r *PostgresTripRepo) ConfirmAttachmentReady(ctx context.Context, id string) error {
 	const q = `UPDATE attachments SET is_ready = TRUE WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, q, id)
+	return err
+}
+
+func (r *PostgresTripRepo) DeleteAttachment(ctx context.Context, tripID, id string) error {
+	const q = `DELETE FROM attachments WHERE id = $1 AND trip_id = $2`
+	_, err := r.db.ExecContext(ctx, q, id, tripID)
 	return err
 }
 

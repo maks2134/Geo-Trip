@@ -22,6 +22,24 @@ func (f *fakeTripClient) GetPublicTrip(ctx context.Context, slug string) (*domai
 	return trip, nil
 }
 
+func (f *fakeTripClient) ClonePublicTrip(ctx context.Context, slug, targetOwnerID string) (*domain.ClonedTripSummary, error) {
+	trip, ok := f.trips[slug]
+	if !ok {
+		return nil, domain.ErrTripNotFound
+	}
+	return &domain.ClonedTripSummary{
+		ID:          "cloned-1",
+		OwnerID:     targetOwnerID,
+		Title:       trip.Title + " (Copy)",
+		Description: trip.Description,
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Status:      "draft",
+		CoverURL:    trip.CoverURL,
+		BudgetLimit: 0,
+	}, nil
+}
+
 func TestPublicShareUsecase_GetPublicTrip(t *testing.T) {
 	client := &fakeTripClient{
 		trips: map[string]*domain.PublicTrip{
@@ -97,4 +115,24 @@ func TestPublicShareUsecase_GetPublicTrip(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("clone public trip success", func(t *testing.T) {
+		cloned, err := uc.ClonePublicTrip(context.Background(), "tokyo-drift-2026", "user-99")
+		if err != nil {
+			t.Fatalf("unexpected error cloning trip: %v", err)
+		}
+		if cloned.OwnerID != "user-99" {
+			t.Errorf("expected owner user-99, got %s", cloned.OwnerID)
+		}
+		if cloned.BudgetLimit != 0 {
+			t.Errorf("expected 0 budget limit on cloned trip, got %f", cloned.BudgetLimit)
+		}
+	})
+
+	t.Run("clone public trip unauthenticated error", func(t *testing.T) {
+		_, err := uc.ClonePublicTrip(context.Background(), "tokyo-drift-2026", "")
+		if !errors.Is(err, domain.ErrUnauthorized) {
+			t.Errorf("expected ErrUnauthorized, got %v", err)
+		}
+	})
 }

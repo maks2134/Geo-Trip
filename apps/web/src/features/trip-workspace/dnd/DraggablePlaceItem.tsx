@@ -8,6 +8,7 @@ import { PlaceRef } from "@/entities/trip";
 import { Badge } from "@/shared/ui/Badge";
 import { useMapUIStore } from "@/stores/map-ui-store";
 import { cn } from "@/shared/lib/utils";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 
 interface DraggablePlaceItemProps {
   item: PlaceRef;
@@ -15,6 +16,7 @@ interface DraggablePlaceItemProps {
 }
 
 export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProps) {
+  const { t } = useTranslation();
   const { openPlaceDrawer } = useMapUIStore();
   const {
     attributes,
@@ -42,7 +44,7 @@ export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProp
         <button
           {...attributes}
           {...listeners}
-          aria-label="Reorder place"
+          aria-label={t("trip.reorder")}
           className="text-[var(--text-muted)] hover:text-[var(--text)] cursor-grab active:cursor-grabbing p-1"
         >
           <GripVertical className="w-4 h-4" />
@@ -60,14 +62,14 @@ export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProp
             <h4 className="font-semibold text-sm truncate text-[var(--text)] group-hover:text-sky-400 transition-colors">
               {item.name}
             </h4>
-            <Badge category={item.category}>{item.category}</Badge>
+            <Badge category={item.category}>{t(`filters.${item.category}`)}</Badge>
           </div>
 
           <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-muted)]">
             {item.durationMinutes && (
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {item.durationMinutes} min
+                {item.durationMinutes} {t("place.minutes")}
               </span>
             )}
             {item.cost !== undefined && item.cost > 0 && (
@@ -88,7 +90,7 @@ export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProp
           {item.transitToNext.mode === "transit" && <Train className="w-3 h-3 text-sky-400" />}
           {item.transitToNext.mode === "drive" && <Car className="w-3 h-3 text-amber-400" />}
           <span>
-            {item.transitToNext.durationMinutes} min ({item.transitToNext.distanceKm} km)
+            {item.transitToNext.durationMinutes} {t("place.minutes")} ({item.transitToNext.distanceKm} {t("distance.km")})
           </span>
         </div>
       )}

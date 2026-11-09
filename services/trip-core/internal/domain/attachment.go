@@ -25,25 +25,35 @@ type Attachment struct {
 	DownloadURL string
 	Visibility  AttachmentVisibility
 	IsReady     bool
+	OwnerType   string
 	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
-var allowedMimeTypes = map[string]bool{
-	"application/pdf": true,
-	"image/jpeg":      true,
-	"image/png":       true,
-	"image/webp":      true,
-}
+const (
+	MaxPhotoSizeBytes = 10 * 1024 * 1024 // 10 MB for photos (JPEG, PNG, WEBP)
+	MaxDocSizeBytes   = 25 * 1024 * 1024 // 25 MB for documents (PDF)
+)
 
-const MaxAttachmentSizeBytes = 25 * 1024 * 1024 // 25 MB
+var allowedPhotoTypes = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/webp": true,
+}
 
 func ValidateAttachmentMeta(contentType string, size int64) error {
 	ct := strings.ToLower(strings.TrimSpace(contentType))
-	if !allowedMimeTypes[ct] {
-		return ErrInvalidMimeType
+	if ct == "application/pdf" {
+		if size > MaxDocSizeBytes {
+			return ErrFileTooLarge
+		}
+		return nil
 	}
-	if size > MaxAttachmentSizeBytes {
-		return ErrFileTooLarge
+	if allowedPhotoTypes[ct] {
+		if size > MaxPhotoSizeBytes {
+			return ErrFileTooLarge
+		}
+		return nil
 	}
-	return nil
+	return ErrInvalidMimeType
 }

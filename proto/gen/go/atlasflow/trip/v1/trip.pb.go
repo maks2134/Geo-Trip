@@ -130,6 +130,8 @@ type AttachmentMeta struct {
 	DownloadURL string               `json:"download_url"`
 	Visibility  AttachmentVisibility `json:"visibility"`
 	CreatedAt   time.Time            `json:"created_at"`
+	IsReady     bool                 `json:"is_ready"`
+	OwnerType   string               `json:"owner_type"`
 }
 
 type Trip struct {
@@ -395,6 +397,8 @@ type CreateAttachmentPresignedURLRequest struct {
 	Filename    string               `json:"filename"`
 	ContentType string               `json:"content_type"`
 	Visibility  AttachmentVisibility `json:"visibility"`
+	FileSize    int64                `json:"file_size"`
+	OwnerType   string               `json:"owner_type"`
 }
 
 type CreateAttachmentPresignedURLResponse struct {
@@ -402,6 +406,44 @@ type CreateAttachmentPresignedURLResponse struct {
 	DownloadURL  string `json:"download_url"`
 	FileKey      string `json:"file_key"`
 	AttachmentID string `json:"attachment_id"`
+}
+
+type ConfirmAttachmentUploadRequest struct {
+	AttachmentID string `json:"attachment_id"`
+	TripID       string `json:"trip_id"`
+}
+
+type ConfirmAttachmentUploadResponse struct {
+	Attachment *AttachmentMeta `json:"attachment"`
+}
+
+type ListAttachmentsRequest struct {
+	TripID     string                `json:"trip_id"`
+	PlaceID    *string               `json:"place_id,omitempty"`
+	DayID      *string               `json:"day_id,omitempty"`
+	Visibility *AttachmentVisibility `json:"visibility,omitempty"`
+}
+
+type ListAttachmentsResponse struct {
+	Attachments []AttachmentMeta `json:"attachments"`
+}
+
+type DeleteAttachmentRequest struct {
+	TripID       string `json:"trip_id"`
+	AttachmentID string `json:"attachment_id"`
+}
+
+type DeleteAttachmentResponse struct {
+	Success bool `json:"success"`
+}
+
+type ClonePublicTripRequest struct {
+	Slug          string `json:"slug"`
+	TargetOwnerID string `json:"target_owner_id"`
+}
+
+type ClonePublicTripResponse struct {
+	Trip *Trip `json:"trip"`
 }
 
 type GetPublicShareTripRequest struct {

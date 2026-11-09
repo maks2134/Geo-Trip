@@ -37,6 +37,11 @@ func NewReverseProxy(targetURL string, logger *slog.Logger) (*ReverseProxyHandle
 			req.Header.Set(middleware.HeaderUserID, identity.ID)
 			req.Header.Set(middleware.HeaderUserEmail, identity.Email)
 		}
+
+		// Forward client locale preference (MH-A)
+		if lang := req.Header.Get("Accept-Language"); lang != "" {
+			req.Header.Set("X-Atlas-Locale", lang)
+		}
 	}
 
 	p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {

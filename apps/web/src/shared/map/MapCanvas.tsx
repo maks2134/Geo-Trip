@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useMapUIStore } from "@/stores/map-ui-store";
@@ -8,6 +8,7 @@ import { Place } from "@/entities/place";
 import { Trip } from "@/entities/trip";
 import { VISITED_COUNTRIES_GEOJSON } from "@/features/world-map/world-geojson";
 import { fitBoundsPlaces } from "./flyTo";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 
 interface MapCanvasProps {
   places?: Place[];
@@ -16,23 +17,155 @@ interface MapCanvasProps {
 }
 
 const MAP_STYLES = {
-  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  dark: process.env.NEXT_PUBLIC_MAP_STYLE_DARK || "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  light: process.env.NEXT_PUBLIC_MAP_STYLE_LIGHT || "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
 };
+
+const SATELLITE_TILE_URL =
+  process.env.NEXT_PUBLIC_SATELLITE_TILE_URL ||
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 
 export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const satelliteErrorsRef = useRef<number>(0);
+  const { t } = useTranslation();
 
   const {
     mode,
     theme,
+    basemap,
+    setBasemap,
+    toggleBasemap,
     selectedDayId,
     statusFilters,
     categoryFilters,
     openPlaceDrawer,
+    satelliteErrorToast,
+    setSatelliteErrorToast,
   } = useMapUIStore();
+
+  // Function to attach/re-attach custom GeoJSON and raster sources & layers
+  const setupCustomLayers = useCallback((map: maplibregl.Map) => {
+    // 1. Add Satellite Raster Source & Layer if not exists
+    if (!map.getSource("satellite-tiles")) {
+      map.addSource("satellite-tiles", {
+        type: "raster",
+        tiles: [SATELLITE_TILE_URL],
+        tileSize: 256,
+        attribution: "Tiles &copy; Esri, Maxar, Earthstar Geographics",
+      });
+    }
+
+    if (!map.getLayer("satellite-raster-layer")) {
+      // Find the first symbol layer to place raster below labels if available
+      const layers = map.getStyle().layers;
+      let firstSymbolId: string | undefined;
+      if (layers) {
+        for (const l of layers) {
+          if (l.type === "symbol") {
+            firstSymbolId = l.id;
+            break;
+          }
+        }
+      }
+
+      map.addLayer(
+        {
+          id: "satellite-raster-layer",
+          type: "raster",
+          source: "satellite-tiles",
+          paint: {
+            "raster-opacity": basemap === "satellite" ? 1 : 0,
+            "raster-fade-duration": 300,
+          },
+        },
+        firstSymbolId
+      );
+    }
+
+    // 2. Add Visited Countries GeoJSON for Scratch Map
+    if (!map.getSource("visited-countries")) {
+      map.addSource("visited-countries", {
+        type: "geojson",
+        data: VISITED_COUNTRIES_GEOJSON,
+      });
+    }
+
+    if (!map.getLayer("visited-countries-fill")) {
+      map.addLayer({
+        id: "visited-countries-fill",
+        type: "fill",
+        source: "visited-countries",
+        paint: {
+          "fill-color": "#38bdf8",
+          "fill-opacity": basemap === "satellite" ? 0.20 : 0.25,
+        },
+      });
+    }
+
+    if (!map.getLayer("visited-countries-outline")) {
+      map.addLayer({
+        id: "visited-countries-outline",
+        type: "line",
+        source: "visited-countries",
+        paint: {
+          "line-color": "#38bdf8",
+          "line-width": 1.5,
+          "line-dasharray": [2, 2],
+        },
+      });
+    }
+
+    // 3. Add Route Polyline
+    if (!map.getSource("trip-route")) {
+      map.addSource("trip-route", {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "LineString", coordinates: [] },
+        },
+      });
+    }
+
+    // Outer dark casing halo for contrast over satellite/bright maps
+    if (!map.getLayer("trip-route-casing")) {
+      map.addLayer({
+        id: "trip-route-casing",
+        type: "line",
+        source: "trip-route",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": "#000000",
+          "line-width": 6.5,
+          "line-opacity": basemap === "satellite" ? 0.85 : 0.35,
+        },
+      });
+    }
+
+    if (!map.getLayer("trip-route-line")) {
+      map.addLayer({
+        id: "trip-route-line",
+        type: "line",
+        source: "trip-route",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": "#38bdf8",
+          "line-width": 3.5,
+          "line-opacity": 0.95,
+          "line-dasharray": [1.5, 1.5],
+        },
+      });
+    }
+  }, [basemap]);
 
   // Initialize Map
   useEffect(() => {
@@ -49,58 +182,24 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     map.on("load", () => {
-      // Add Country Fill Layer for World Scratch Map
-      map.addSource("visited-countries", {
-        type: "geojson",
-        data: VISITED_COUNTRIES_GEOJSON,
-      });
+      setupCustomLayers(map);
+    });
 
-      map.addLayer({
-        id: "visited-countries-fill",
-        type: "fill",
-        source: "visited-countries",
-        paint: {
-          "fill-color": "#38bdf8",
-          "fill-opacity": 0.22,
-        },
-      });
+    // Re-attach custom GeoJSON & raster layers whenever style finishes loading (styledata / style.load)
+    map.on("style.load", () => {
+      setupCustomLayers(map);
+    });
 
-      map.addLayer({
-        id: "visited-countries-outline",
-        type: "line",
-        source: "visited-countries",
-        paint: {
-          "line-color": "#38bdf8",
-          "line-width": 1.5,
-          "line-dasharray": [2, 2],
-        },
-      });
-
-      // Route polyline source
-      map.addSource("trip-route", {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "LineString", coordinates: [] },
-        },
-      });
-
-      map.addLayer({
-        id: "trip-route-line",
-        type: "line",
-        source: "trip-route",
-        layout: {
-          "line-join": "round",
-          "line-cap": "round",
-        },
-        paint: {
-          "line-color": "#38bdf8",
-          "line-width": 3.5,
-          "line-opacity": 0.9,
-          "line-dasharray": [1.5, 1.5],
-        },
-      });
+    // Satellite tile error detection and graceful fallback
+    map.on("error", (e: any) => {
+      if (e?.error && (e.error?.message?.includes("satellite") || e.sourceId === "satellite-tiles" || e.source?.id === "satellite-tiles")) {
+        satelliteErrorsRef.current += 1;
+        if (satelliteErrorsRef.current >= 3) {
+          setBasemap("streets");
+          setSatelliteErrorToast(true);
+          setTimeout(() => setSatelliteErrorToast(false), 5000);
+        }
+      }
     });
 
     mapRef.current = map;
@@ -111,13 +210,41 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
     };
   }, []);
 
-  // Update Style on Theme Switch
+  // Update Style on Theme Switch while preserving layers
   useEffect(() => {
     if (!mapRef.current) return;
     mapRef.current.setStyle(MAP_STYLES[theme]);
   }, [theme]);
 
-  // Update Markers & Layers
+  // Update Satellite visibility & contrast on basemap switch
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (map.getLayer("satellite-raster-layer")) {
+      map.setPaintProperty(
+        "satellite-raster-layer",
+        "raster-opacity",
+        basemap === "satellite" ? 1 : 0
+      );
+    }
+    if (map.getLayer("visited-countries-fill")) {
+      map.setPaintProperty(
+        "visited-countries-fill",
+        "fill-opacity",
+        basemap === "satellite" ? 0.20 : 0.25
+      );
+    }
+    if (map.getLayer("trip-route-casing")) {
+      map.setPaintProperty(
+        "trip-route-casing",
+        "line-opacity",
+        basemap === "satellite" ? 0.85 : 0.35
+      );
+    }
+  }, [basemap]);
+
+  // Update Markers & Layers by Mode
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -135,6 +262,9 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
       if (map.getLayer("trip-route-line")) {
         map.setLayoutProperty("trip-route-line", "visibility", "none");
       }
+      if (map.getLayer("trip-route-casing")) {
+        map.setLayoutProperty("trip-route-casing", "visibility", "none");
+      }
 
       // Filter and place pins
       const filteredPlaces = places.filter(
@@ -150,7 +280,7 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
         if (p.status === "wishlist") pinBg = "bg-pink-400";
 
         el.innerHTML = `
-          <div class="w-7 h-7 rounded-full ${pinBg} text-slate-900 shadow-lg flex items-center justify-center font-bold text-xs ring-2 ring-white/60">
+          <div class="w-7 h-7 rounded-full ${pinBg} text-slate-900 shadow-xl flex items-center justify-center font-bold text-xs ring-2 ring-white/70">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
           </div>
         `;
@@ -174,6 +304,9 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
       if (map.getLayer("trip-route-line")) {
         map.setLayoutProperty("trip-route-line", "visibility", "visible");
       }
+      if (map.getLayer("trip-route-casing")) {
+        map.setLayoutProperty("trip-route-casing", "visibility", "visible");
+      }
 
       const activeDay = trip.days.find((d) => d.id === selectedDayId) || trip.days[0];
       const activeCoords: [number, number][] = [];
@@ -186,7 +319,7 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
           el.className = "cursor-pointer transition-transform hover:scale-125 duration-150";
           el.innerHTML = `
             <div class="relative flex items-center justify-center">
-              <div class="w-8 h-8 rounded-full bg-sky-500 text-white font-extrabold text-sm shadow-xl flex items-center justify-center ring-2 ring-white/80">
+              <div class="w-8 h-8 rounded-full bg-sky-500 text-white font-extrabold text-sm shadow-2xl flex items-center justify-center ring-2 ring-white/90">
                 ${index + 1}
               </div>
               <div class="absolute -bottom-1 w-2 h-2 bg-sky-500 rotate-45"></div>
@@ -226,6 +359,40 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full" />
+
+      {/* Floating Streets ↔ Satellite Toggle Pill (MH-D) */}
+      <div className="absolute top-4 right-16 z-20 flex items-center rounded-xl p-1 bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl text-xs font-semibold text-slate-200">
+        <button
+          onClick={() => setBasemap("streets")}
+          className={`px-3 py-1.5 rounded-lg transition-all ${
+            basemap === "streets"
+              ? "bg-sky-500 text-white shadow-md font-bold"
+              : "hover:text-white hover:bg-white/10"
+          }`}
+        >
+          {t("basemap.streets")}
+        </button>
+        <button
+          onClick={() => setBasemap("satellite")}
+          className={`px-3 py-1.5 rounded-lg transition-all ${
+            basemap === "satellite"
+              ? "bg-sky-500 text-white shadow-md font-bold"
+              : "hover:text-white hover:bg-white/10"
+          }`}
+        >
+          {t("basemap.satellite")}
+        </button>
+      </div>
+
+      {/* Satellite Error Fallback Toast */}
+      {satelliteErrorToast && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-amber-500/90 text-slate-950 font-medium text-xs shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {t("basemap.satelliteFallback")}
+        </div>
+      )}
     </div>
   );
 }

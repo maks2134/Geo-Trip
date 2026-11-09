@@ -626,7 +626,9 @@ func (h *TripHandler) CreateAttachmentPresignedURL(ctx context.Context, req *tri
 		DayID:       req.DayID,
 		Filename:    req.Filename,
 		ContentType: req.ContentType,
+		FileSize:    req.FileSize,
 		Visibility:  domain.AttachmentVisibility(req.Visibility),
+		OwnerType:   req.OwnerType,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -638,6 +640,137 @@ func (h *TripHandler) CreateAttachmentPresignedURL(ctx context.Context, req *tri
 		FileKey:      out.FileKey,
 		AttachmentID: out.AttachmentID,
 	}, nil
+}
+
+func (h *TripHandler) ConfirmAttachmentUpload(ctx context.Context, req *tripv1.ConfirmAttachmentUploadRequest) (*tripv1.ConfirmAttachmentUploadResponse, error) {
+	uid, err := GetUserID(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+
+	att, err := h.attachmentUsecase.ConfirmUpload(ctx, req.TripID, req.AttachmentID, uid)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &tripv1.ConfirmAttachmentUploadResponse{
+		Attachment: &tripv1.AttachmentMeta{
+			ID:          att.ID,
+			TripID:      att.TripID,
+			PlaceID:     att.PlaceID,
+			DayID:       att.DayID,
+			Filename:    att.Filename,
+			ContentType: att.ContentType,
+			FileSize:    att.FileSize,
+			StorageKey:  att.StorageKey,
+			DownloadURL: att.DownloadURL,
+			Visibility:  tripv1.AttachmentVisibility(att.Visibility),
+			CreatedAt:   att.CreatedAt,
+			IsReady:     att.IsReady,
+			OwnerType:   att.OwnerType,
+		},
+	}, nil
+}
+
+func (h *TripHandler) ListAttachments(ctx context.Context, req *tripv1.ListAttachmentsRequest) (*tripv1.ListAttachmentsResponse, error) {
+	uid, err := GetUserID(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+
+	var vis *domain.AttachmentVisibility
+	if req.Visibility != nil {
+		v := domain.AttachmentVisibility(*req.Visibility)
+		vis = &v
+	}
+
+	list, err := h.attachmentUsecase.ListAttachments(ctx, req.TripID, req.PlaceID, req.DayID, vis, uid)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	var res []tripv1.AttachmentMeta
+	for _, a := range list {
+		res = append(res, tripv1.AttachmentMeta{
+			ID:          a.ID,
+			TripID:      a.TripID,
+			PlaceID:     a.PlaceID,
+			DayID:       a.DayID,
+			Filename:    a.Filename,
+			ContentType: a.ContentType,
+			FileSize:    a.FileSize,
+			StorageKey:  a.StorageKey,
+			DownloadURL: a.DownloadURL,
+			Visibility:  tripv1.AttachmentVisibility(a.Visibility),
+			CreatedAt:   a.CreatedAt,
+			IsReady:     a.IsReady,
+			OwnerType:   a.OwnerType,
+		})
+	}
+
+	return &tripv1.ListAttachmentsResponse{Attachments: res}, nil
+}
+
+func (h *TripHandler) DeleteAttachment(ctx context.Context, req *tripv1.DeleteAttachmentRequest) (*tripv1.DeleteAttachmentResponse, error) {
+	uid, err := GetUserID(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+
+	if err := h.attachmentUsecase.DeleteAttachment(ctx, req.TripID, req.AttachmentID, uid); err != nil {
+		return nil, mapError(err)
+	}
+
+	return &tripv1.DeleteAttachmentResponse{Success: true}, nil
+}
+
+func mapTripStatus(s domain.TripStatus) tripv1.TripStatus {
+	switch s {
+	case domain.TripStatusDraft:
+		return tripv1.TripStatusDraft
+	case domain.TripStatusUpcoming:
+		return tripv1.TripStatusUpcoming
+	case domain.TripStatusActive:
+		return tripv1.TripStatusActive
+	case domain.TripStatusCompleted:
+		return tripv1.TripStatusCompleted
+	default:
+		return tripv1.TripStatusUnspecified
+	}
+}
+
+func (h *TripHandler) ClonePublicTrip(ctx context.Context, req *tripv1.ClonePublicTripRequest) (*tripv1.ClonePublicTripResponse, error) {
+	targetOwnerID := req.TargetOwnerID
+	if targetOwnerID == "" {
+		if uid, err := GetUserID(ctx); err == nil && uid != "" {
+			targetOwnerID = uid
+		}
+	}
+	if targetOwnerID == "" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required to clone trip"))
+	}
+
+	cloned, err := h.shareUsecase.ClonePublicTrip(ctx, req.Slug, targetOwnerID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	protoTrip := &tripv1.Trip{
+		ID:          cloned.ID,
+		OwnerID:     cloned.OwnerID,
+		Title:       cloned.Title,
+		Description: cloned.Description,
+		StartDate:   cloned.StartDate,
+		EndDate:     cloned.EndDate,
+		Status:      mapTripStatus(cloned.Status),
+		CoverURL:    cloned.CoverURL,
+		Currency:    cloned.Currency,
+		BudgetLimit: cloned.BudgetLimit,
+		CreatedAt:   cloned.CreatedAt,
+		UpdatedAt:   cloned.UpdatedAt,
+	}
+
+	return &tripv1.ClonePublicTripResponse{Trip: protoTrip}, nil
 }
 
 func (h *TripHandler) GetPublicShareTrip(ctx context.Context, req *tripv1.GetPublicShareTripRequest) (*tripv1.GetPublicShareTripResponse, error) {

@@ -28,6 +28,7 @@ type CreateUploadInput struct {
 	ContentType string
 	FileSize    int64
 	Visibility  domain.AttachmentVisibility
+	OwnerType   string
 }
 
 type UploadPresignedOutput struct {
@@ -51,7 +52,15 @@ func (u *AttachmentUsecase) CreateUpload(ctx context.Context, in CreateUploadInp
 	}
 
 	attachmentID := u.ids.New()
-	key := fmt.Sprintf("trips/%s/attachments/%s-%s", in.TripID, attachmentID, in.Filename)
+	ownerFolder := "general"
+	if in.OwnerType != "" {
+		ownerFolder = in.OwnerType
+	} else if in.PlaceID != nil && *in.PlaceID != "" {
+		ownerFolder = "places/" + *in.PlaceID
+	} else if in.DayID != nil && *in.DayID != "" {
+		ownerFolder = "days/" + *in.DayID
+	}
+	key := fmt.Sprintf("trips/%s/%s/%s-%s", in.TripID, ownerFolder, attachmentID, in.Filename)
 
 	putURL, err := u.storage.PresignPut(ctx, key, in.ContentType, 15*time.Minute)
 	if err != nil {
@@ -80,7 +89,9 @@ func (u *AttachmentUsecase) CreateUpload(ctx context.Context, in CreateUploadInp
 		DownloadURL: getURL,
 		Visibility:  vis,
 		IsReady:     false,
+		OwnerType:   in.OwnerType,
 		CreatedAt:   u.clock.Now(),
+		UpdatedAt:   u.clock.Now(),
 	}
 
 	if err := u.repo.CreateAttachment(ctx, meta); err != nil {
@@ -95,7 +106,59 @@ func (u *AttachmentUsecase) CreateUpload(ctx context.Context, in CreateUploadInp
 	}, nil
 }
 
-func (u *AttachmentUsecase) ConfirmUpload(ctx context.Context, tripID, attachmentID, userID string) error {
+func (u *AttachmentUsecase) ConfirmUpload(ctx context.Context, tripID, attachmentID, userID string) (domain.Attachment, error) {
+	t, err := u.repo.GetTrip(ctx, tripID)
+	if err != nil {
+		return domain.Attachment{}, err
+	}
+	if err := t.AssertOwner(userID); err != nil {
+		return domain.Attachment{}, err
+	}
+
+	att, err := u.repo.GetAttachment(ctx, attachmentID)
+	if err != nil {
+		return domain.Attachment{}, err
+	}
+	if att.TripID != tripID {
+		return domain.Attachment{}, domain.ErrNotFound
+	}
+
+	if err := u.repo.ConfirmAttachmentReady(ctx, attachmentID); err != nil {
+		return domain.Attachment{}, err
+	}
+
+	att.IsReady = true
+	att.UpdatedAt = u.clock.Now()
+
+	// If owner_type is trip_cover, update trip cover URL
+	if att.OwnerType == "trip_cover" || (att.PlaceID == nil && att.DayID == nil && att.Visibility == domain.AttachmentVisibilityPublic) {
+		t.CoverURL = att.DownloadURL
+		t.UpdatedAt = u.clock.Now()
+		_ = u.repo.UpdateTrip(ctx, t)
+	}
+
+	return att, nil
+}
+
+func (u *AttachmentUsecase) ListAttachments(
+	ctx context.Context,
+	tripID string,
+	placeID, dayID *string,
+	visibility *domain.AttachmentVisibility,
+	userID string,
+) ([]domain.Attachment, error) {
+	t, err := u.repo.GetTrip(ctx, tripID)
+	if err != nil {
+		return nil, err
+	}
+	if err := t.AssertOwner(userID); err != nil {
+		return nil, err
+	}
+
+	return u.repo.ListAttachmentsFiltered(ctx, tripID, placeID, dayID, visibility)
+}
+
+func (u *AttachmentUsecase) DeleteAttachment(ctx context.Context, tripID, attachmentID, userID string) error {
 	t, err := u.repo.GetTrip(ctx, tripID)
 	if err != nil {
 		return err
@@ -112,5 +175,6 @@ func (u *AttachmentUsecase) ConfirmUpload(ctx context.Context, tripID, attachmen
 		return domain.ErrNotFound
 	}
 
-	return u.repo.ConfirmAttachmentReady(ctx, attachmentID)
+	_ = u.storage.DeleteObject(ctx, att.StorageKey)
+	return u.repo.DeleteAttachment(ctx, tripID, attachmentID)
 }

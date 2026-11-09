@@ -13,12 +13,14 @@ import { PlaceDrawer } from "@/features/place-drawer/PlaceDrawer";
 import { BudgetTab } from "@/features/budget/BudgetTab";
 import { ChecklistTab } from "@/features/checklists/ChecklistTab";
 import { useMapUIStore } from "@/stores/map-ui-store";
+import { useTranslation } from "@/shared/i18n/i18n-context";
 import { apiClient } from "@/shared/lib/api";
 import { Trip } from "@/entities/trip";
 import { DollarSign, CheckSquare, Layers } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const {
     mode,
@@ -69,7 +71,7 @@ export default function HomePage() {
       {mode === "trip" && activeTrip && (
         <div className="absolute top-6 left-6 bottom-24 w-[420px] z-20 pointer-events-none">
           <GlassPanel className="h-full flex flex-col pointer-events-auto shadow-2xl p-4 space-y-4 overflow-hidden">
-            <TripSwitcher trips={trips} activeTrip={activeTrip} />
+            <TripSwitcher trips={trips} activeTrip={activeTrip} onTripUpdate={handleTripUpdate} />
 
             <div className="flex items-center gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/5 shrink-0">
               <button
@@ -82,7 +84,7 @@ export default function HomePage() {
                 )}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Itinerary</span>
+                <span>{t("tabs.itinerary")}</span>
               </button>
 
               <button
@@ -95,7 +97,7 @@ export default function HomePage() {
                 )}
               >
                 <DollarSign className="w-3.5 h-3.5" />
-                <span>Budget</span>
+                <span>{t("tabs.budget")}</span>
               </button>
 
               <button
@@ -108,7 +110,7 @@ export default function HomePage() {
                 )}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
-                <span>Checklists</span>
+                <span>{t("tabs.checklists")}</span>
               </button>
             </div>
 

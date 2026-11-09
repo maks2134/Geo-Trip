@@ -30,7 +30,12 @@ service TripService {
   rpc ListChecklistItems(ListChecklistItemsRequest) returns (ListChecklistItemsResponse);
 
   rpc CreateAttachmentPresignedURL(CreateAttachmentPresignedURLRequest) returns (CreateAttachmentPresignedURLResponse);
+  rpc ConfirmAttachmentUpload(ConfirmAttachmentUploadRequest) returns (ConfirmAttachmentUploadResponse);
+  rpc ListAttachments(ListAttachmentsRequest) returns (ListAttachmentsResponse);
+  rpc DeleteAttachment(DeleteAttachmentRequest) returns (DeleteAttachmentResponse);
+
   rpc GetPublicShareTrip(GetPublicShareTripRequest) returns (GetPublicShareTripResponse);
+  rpc ClonePublicTrip(ClonePublicTripRequest) returns (ClonePublicTripResponse);
 }
 
 enum TripStatus {
@@ -154,6 +159,8 @@ message AttachmentMeta {
   string download_url = 9;
   AttachmentVisibility visibility = 10;
   google.protobuf.Timestamp created_at = 11;
+  bool is_ready = 12;
+  string owner_type = 13;
 }
 
 message Trip {
@@ -419,6 +426,8 @@ message CreateAttachmentPresignedURLRequest {
   string filename = 4;
   string content_type = 5;
   AttachmentVisibility visibility = 6;
+  int64 file_size = 7;
+  string owner_type = 8;
 }
 
 message CreateAttachmentPresignedURLResponse {
@@ -426,6 +435,44 @@ message CreateAttachmentPresignedURLResponse {
   string download_url = 2;
   string file_key = 3;
   string attachment_id = 4;
+}
+
+message ConfirmAttachmentUploadRequest {
+  string attachment_id = 1;
+  string trip_id = 2;
+}
+
+message ConfirmAttachmentUploadResponse {
+  AttachmentMeta attachment = 1;
+}
+
+message ListAttachmentsRequest {
+  string trip_id = 1;
+  optional string place_id = 2;
+  optional string day_id = 3;
+  optional AttachmentVisibility visibility = 4;
+}
+
+message ListAttachmentsResponse {
+  repeated AttachmentMeta attachments = 1;
+}
+
+message DeleteAttachmentRequest {
+  string trip_id = 1;
+  string attachment_id = 2;
+}
+
+message DeleteAttachmentResponse {
+  bool success = 1;
+}
+
+message ClonePublicTripRequest {
+  string slug = 1;
+  string target_owner_id = 2;
+}
+
+message ClonePublicTripResponse {
+  Trip trip = 1;
 }
 
 message GetPublicShareTripRequest {

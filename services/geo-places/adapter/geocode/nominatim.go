@@ -60,6 +60,9 @@ func (n *NominatimGeocoder) ReverseGeocode(ctx context.Context, loc domain.LatLn
 	q.Set("format", "jsonv2")
 	q.Set("lat", strconv.FormatFloat(loc.Latitude, 'f', 6, 64))
 	q.Set("lon", strconv.FormatFloat(loc.Longitude, 'f', 6, 64))
+	if locVal, ok := ctx.Value("locale").(string); ok && locVal != "" {
+		q.Set("accept-language", locVal)
+	}
 	u.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
