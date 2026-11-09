@@ -6,6 +6,7 @@
 2. Prefer extending existing packages/patterns over inventing new frameworks.
 3. Ship small, compilable increments: domain → usecase → repo/handler → tests → UI wiring.
 4. When a skill matches the task, read and follow it from `.agents/skills/`.
+5. Product discovery / release scope → `business-analyst` + `product-manager`. A release feature set closes only with both approvals; then ship via `release-ship` (GitHub + semver tag/Release).
 
 ## Backend (Go)
 
