@@ -8,7 +8,50 @@
     "worldMap": "World Map",
     "trips": "Trips",
     "share": "Share",
-    "settings": "Settings"
+    "settings": "Settings",
+    "directions": "Navigate",
+    "openInMaps": "Navigate in Maps",
+    "transitDirections": "Transit Directions",
+    "preferredApp": "Preferred Map App"
+  },
+  "dock": {
+    "quickPin": "Quick Pin",
+    "quickPinActive": "Click Map to Pin",
+    "quickPinTooltip": "Quick Pin mode: click anywhere on map to add place"
+  },
+  "quickPin": {
+    "header": "Quick Pin — Auto Geocoded",
+    "placeName": "Place Name",
+    "addTo": "Add to Day / Itinerary",
+    "dayOne": "Day 1 (Current)",
+    "backlog": "Trip Backlog",
+    "addBtn": "Add to Itinerary"
+  },
+  "route": {
+    "optimize": "Optimize Route",
+    "optimizationPreview": "Route Optimization (2-opt TSP)",
+    "distanceSaved": "Transit Distance Saved",
+    "constraints": "Route Constraints",
+    "lockFirstStop": "Lock First Stop (Departure / Hotel)",
+    "lockLastStop": "Lock Last Stop (Dinner / Final Destination)",
+    "applySort": "Apply Optimized Order",
+    "optimizedSuccess": "Day itinerary reordered to shortest path"
+  },
+  "dossier": {
+    "title": "Dossier (PDF)",
+    "printTooltip": "Print or export 1-Page/Day offline expedition dossier with GPS QR codes",
+    "previewTitle": "Expedition Summary Dossier Preview",
+    "printBtn": "Print / Save PDF"
+  },
+  "milestones": {
+    "regionsTab": "UN Regions",
+    "badgesTab": "Milestones",
+    "clickToFly": "Click a region to frame map camera"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "save": "Save"
   },
   "theme": {
     "system": "System",
@@ -34,6 +77,7 @@
   "filters": {
     "status": "Pin Status",
     "categories": "Categories",
+    "category": "Category",
     "visited": "Visited",
     "planned": "Planned",
     "wishlist": "Wishlist",
@@ -77,6 +121,11 @@
   },
   "budget": {
     "title": "Trip Budget Tracker",
+    "totalBudget": "Total Budget",
+    "allocated": "Allocated",
+    "categoryBreakdown": "Category Breakdown",
+    "recentExpenses": "Recent Expenses",
+    "add": "Add Expense",
     "limit": "Budget Limit",
     "totalSpent": "Total Spent",
     "remaining": "Remaining",
@@ -121,6 +170,7 @@
     "links": "Links",
     "photos": "Photos & Media",
     "documents": "Vouchers & Documents",
+    "attachments": "Attachments & Vouchers",
     "uploadDropzone": "Drag & drop photos or PDF vouchers here, or click to browse",
     "uploadSizeLimit": "JPG, PNG, WEBP up to 10MB • PDF up to 25MB",
     "uploading": "Uploading...",

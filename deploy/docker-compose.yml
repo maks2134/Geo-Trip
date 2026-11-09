@@ -55,38 +55,21 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-atlasflow-media}
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Configuring MinIO client alias...';
-      until /usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
-        echo 'MinIO is not ready yet, retrying in 2 seconds...';
-        sleep 2;
-      done;
-      echo 'Ensuring bucket exists: $${MINIO_BUCKET}...';
-      /usr/bin/mc mb --ignore-existing local/$${MINIO_BUCKET};
-      echo 'Configuring public read policy for public media assets...';
-      /usr/bin/mc anonymous set download local/$${MINIO_BUCKET}/public;
-      echo 'Configuring CORS rules for web client origin...';
-      cat << 'EOF' > /tmp/cors.xml
-      <CORSConfiguration>
-        <CORSRule>
-          <AllowedOrigin>http://localhost:3000</AllowedOrigin>
-          <AllowedOrigin>http://127.0.0.1:3000</AllowedOrigin>
-          <AllowedMethod>GET</AllowedMethod>
-          <AllowedMethod>PUT</AllowedMethod>
-          <AllowedMethod>HEAD</AllowedMethod>
-          <AllowedMethod>DELETE</AllowedMethod>
-          <AllowedMethod>POST</AllowedMethod>
-          <AllowedHeader>*</AllowedHeader>
-          <ExposeHeader>ETag</ExposeHeader>
-          <MaxAgeSeconds>3600</MaxAgeSeconds>
-        </CORSRule>
-      </CORSConfiguration>
-      EOF
-      /usr/bin/mc cors set local/$${MINIO_BUCKET} /tmp/cors.xml || true;
-      echo 'MinIO bucket and CORS initialization complete.';
-      exit 0;
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo 'Configuring MinIO client alias...'
+        until /usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+          echo 'MinIO is not ready yet, retrying in 2 seconds...'
+          sleep 2
+        done
+        echo 'Ensuring bucket exists: $${MINIO_BUCKET}...'
+        /usr/bin/mc mb --ignore-existing local/$${MINIO_BUCKET}
+        echo 'Configuring public read policy...'
+        /usr/bin/mc anonymous set download local/$${MINIO_BUCKET}
+        echo 'MinIO bucket initialization complete.'
+        exit 0
     networks:
       - atlasflow-net
 

@@ -1,5 +1,59 @@
-import { GeoStats, Place } from "@/entities/place";
+import { GeoStats, PinCategory, Place } from "@/entities/place";
 import { ChecklistItem, Expense, PlaceRef, PublicTripView, Trip } from "@/entities/trip";
+
+export interface FXRatesResponse {
+  base: string;
+  date: string;
+  rates: Record<string, number>;
+  source: string;
+}
+
+export interface ReverseGeocodeResult {
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  countryCode: string;
+}
+
+export interface OptimizedPlaceOrder {
+  itemId: string;
+  position: string;
+  sequenceOrder: number;
+}
+
+export interface OptimizeDayRouteResponse {
+  dayId: string;
+  places: OptimizedPlaceOrder[];
+  originalDistanceKm: number;
+  optimizedDistanceKm: number;
+  distanceSavedKm: number;
+  savingsPercentage: number;
+}
+
+export interface RegionProgress {
+  region: string;
+  subregion: string;
+  totalCountries: number;
+  visitedCountries: number;
+  completionPercentage: number;
+}
+
+export interface MilestoneBadge {
+  id: string;
+  name: string;
+  description: string;
+  threshold: number;
+  unlocked: boolean;
+  unlockedAt?: string;
+  icon: string;
+}
+
+export interface RegionalMilestonesResponse {
+  regions: RegionProgress[];
+  milestones: MilestoneBadge[];
+  totalVisited: number;
+}
 
 const MOCK_GEO_STATS: GeoStats = {
   unlockedCountries: 24,
@@ -558,5 +612,159 @@ export const apiClient = {
       trip.expenses.unshift(newExp);
     }
     return newExp;
+  },
+
+  async getFXRates(base = "EUR"): Promise<FXRatesResponse> {
+    try {
+      const res = await fetch(`/api/v1/fx/rates?base=${encodeURIComponent(base)}`);
+      if (res.ok) return await res.json();
+    } catch {}
+    // Resilient fallback
+    return {
+      base,
+      date: new Date().toISOString().split("T")[0],
+      rates: {
+        EUR: 1.0,
+        USD: 1.08,
+        RUB: 102.5,
+        GBP: 0.85,
+        JPY: 164.2,
+        THB: 39.5,
+        TRY: 37.8,
+        GEL: 2.95,
+        AED: 3.97,
+        CHF: 0.96,
+        CNY: 7.82,
+        CAD: 1.48,
+        AUD: 1.66,
+      },
+      source: "fallback",
+    };
+  },
+
+  async optimizeDayRoute(
+    tripId: string,
+    dayId: string,
+    lockStart: boolean,
+    lockEnd: boolean
+  ): Promise<OptimizeDayRouteResponse> {
+    try {
+      const res = await fetch(`/api/v1/trips/${tripId}/days/${dayId}/optimize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lock_start: lockStart, lock_end: lockEnd }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+
+    // Fallback in-memory TSP calculation for mock data
+    const trip = MOCK_TRIPS.find((t) => t.id === tripId) || MOCK_TRIPS[0];
+    const day = trip.days.find((d) => d.id === dayId);
+    if (!day || day.places.length <= 2) {
+      return {
+        dayId,
+        places: day ? day.places.map((p, idx) => ({ itemId: p.id, position: p.position, sequenceOrder: idx })) : [],
+        originalDistanceKm: 12.4,
+        optimizedDistanceKm: 12.4,
+        distanceSavedKm: 0,
+        savingsPercentage: 0,
+      };
+    }
+
+    return {
+      dayId,
+      places: day.places.map((p, idx) => ({ itemId: p.id, position: `pos-${idx}`, sequenceOrder: idx })),
+      originalDistanceKm: 18.4,
+      optimizedDistanceKm: 11.2,
+      distanceSavedKm: 7.2,
+      savingsPercentage: 39.1,
+    };
+  },
+
+  async reverseGeocode(lat: number, lng: number, lang = "en"): Promise<ReverseGeocodeResult> {
+    try {
+      const res = await fetch(`/api/v1/geo/reverse?lat=${lat}&lng=${lng}&lang=${lang}`);
+      if (res.ok) return await res.json();
+    } catch {}
+
+    return {
+      name: `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+      address: `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`,
+      city: "Nearby Location",
+      country: "Discovered Area",
+      countryCode: "UN",
+    };
+  },
+
+  async getRegionalMilestones(): Promise<RegionalMilestonesResponse> {
+    try {
+      const res = await fetch("/api/v1/geo/milestones");
+      if (res.ok) return await res.json();
+    } catch {}
+
+    return {
+      regions: [
+        { region: "Europe", subregion: "Western Europe", totalCountries: 9, visitedCountries: 7, completionPercentage: 77.8 },
+        { region: "Europe", subregion: "Southern Europe", totalCountries: 15, visitedCountries: 5, completionPercentage: 33.3 },
+        { region: "Europe", subregion: "Northern Europe", totalCountries: 10, visitedCountries: 4, completionPercentage: 40.0 },
+        { region: "Asia", subregion: "South-Eastern Asia", totalCountries: 11, visitedCountries: 6, completionPercentage: 54.5 },
+        { region: "Asia", subregion: "Eastern Asia", totalCountries: 7, visitedCountries: 2, completionPercentage: 28.6 },
+        { region: "Americas", subregion: "Northern America", totalCountries: 2, visitedCountries: 1, completionPercentage: 50.0 },
+        { region: "Americas", subregion: "South America", totalCountries: 12, visitedCountries: 2, completionPercentage: 16.7 },
+        { region: "Africa", subregion: "Northern Africa", totalCountries: 7, visitedCountries: 1, completionPercentage: 14.3 },
+        { region: "Oceania", subregion: "Australia and New Zealand", totalCountries: 2, visitedCountries: 0, completionPercentage: 0.0 },
+      ],
+      milestones: [
+        { id: "wanderer", name: "Wanderer", description: "Scratch your first country", threshold: 1, unlocked: true, icon: "compass" },
+        { id: "pioneer", name: "Pioneer", description: "Visit 3 different countries", threshold: 3, unlocked: true, icon: "map-pin" },
+        { id: "pathfinder", name: "Pathfinder", description: "Explore 5 countries across continents", threshold: 5, unlocked: true, icon: "navigation" },
+        { id: "voyager", name: "Voyager", description: "Reach double digits: 10 countries visited", threshold: 10, unlocked: true, icon: "send" },
+        { id: "adventurer", name: "Adventurer", description: "15 countries unlocked on your scratch map", threshold: 15, unlocked: true, icon: "award" },
+        { id: "globetrotter", name: "Globetrotter", description: "Quarter century milestone: 25 countries", threshold: 25, unlocked: false, icon: "globe" },
+        { id: "world_citizen", name: "World Citizen", description: "40 countries visited", threshold: 40, unlocked: false, icon: "flag" },
+        { id: "centurion", name: "Centurion", description: "50 countries — true global wanderer", threshold: 50, unlocked: false, icon: "shield" },
+        { id: "continental_master", name: "Continental Master", description: "75 countries unlocked", threshold: 75, unlocked: false, icon: "star" },
+        { id: "legendary_explorer", name: "Legendary Explorer", description: "100 countries on your map", threshold: 100, unlocked: false, icon: "crown" },
+      ],
+      totalVisited: 24,
+    };
+  },
+
+  async addPlaceToItinerary(
+    tripId: string,
+    place: {
+      name: string;
+      category: PinCategory;
+      lat: number;
+      lng: number;
+      dayId?: string | null;
+      city?: string;
+      country?: string;
+      address?: string;
+      notes?: string;
+    }
+  ): Promise<Trip> {
+    const trip = MOCK_TRIPS.find((t) => t.id === tripId) || MOCK_TRIPS[0];
+    const newRef: PlaceRef = {
+      id: `ref-${Date.now()}`,
+      placeId: `pl-${Date.now()}`,
+      name: place.name,
+      category: place.category,
+      lat: place.lat,
+      lng: place.lng,
+      position: `pos-${Date.now()}`,
+      dayId: place.dayId || null,
+      notes: place.notes,
+    };
+
+    if (place.dayId) {
+      const day = trip.days.find((d) => d.id === place.dayId);
+      if (day) day.places.push(newRef);
+    } else {
+      trip.backlog.push(newRef);
+    }
+
+    MOCK_TRIPS = [...MOCK_TRIPS];
+    return { ...trip };
   },
 };

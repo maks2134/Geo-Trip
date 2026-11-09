@@ -11,4 +11,5 @@ type GeoServiceHandler interface {
 	ReverseGeocode(context.Context, *geov1.ReverseGeocodeRequest) (*geov1.ReverseGeocodeResponse, error)
 	GetVisitedCountries(context.Context, *geov1.GetVisitedCountriesRequest) (*geov1.GetVisitedCountriesResponse, error)
 	MarkCountryVisited(context.Context, *geov1.MarkCountryVisitedRequest) (*geov1.MarkCountryVisitedResponse, error)
+	GetRegionalMilestones(context.Context, *geov1.GetRegionalMilestonesRequest) (*geov1.GetRegionalMilestonesResponse, error)
 }

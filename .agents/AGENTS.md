@@ -7,6 +7,7 @@
 3. Ship small, compilable increments: domain → usecase → repo/handler → tests → UI wiring.
 4. When a skill matches the task, read and follow it from `.agents/skills/`.
 5. Product discovery / release scope → `business-analyst` + `product-manager`. A release feature set closes only with both approvals; then ship via `release-ship` (GitHub + semver tag/Release).
+6. Before ship: `verifier` (automated) then `manual-qa` (real browser clicks against locked ACs). Do not ship without `MANUAL_QA_PASSED`.
 
 ## Backend (Go)
 

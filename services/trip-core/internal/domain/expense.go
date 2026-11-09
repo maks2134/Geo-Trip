@@ -18,16 +18,21 @@ const (
 )
 
 type Expense struct {
-	ID          string
-	TripID      string
-	DayID       *string
-	PlaceItemID *string
-	Category    ExpenseCategory
-	Amount      float64
-	Currency    string
-	Title       string
-	Notes       string
-	CreatedAt   time.Time
+	ID               string
+	TripID           string
+	DayID            *string
+	PlaceItemID      *string
+	Category         ExpenseCategory
+	Amount           float64
+	Currency         string
+	OriginalCurrency string
+	OriginalAmount   float64
+	FxRate           float64
+	BaseAmount       float64
+	IsCustomRate     bool
+	Title            string
+	Notes            string
+	CreatedAt        time.Time
 }
 
 type BudgetSummary struct {
@@ -38,21 +43,32 @@ type BudgetSummary struct {
 	SpentByDay      map[string]float64
 }
 
+func CalculateBaseAmount(origAmount, fxRate float64) float64 {
+	if fxRate <= 0 {
+		fxRate = 1.0
+	}
+	return math.Round((origAmount*fxRate)*100) / 100
+}
+
 func CalculateBudgetSummary(limit float64, currency string, expenses []Expense) BudgetSummary {
 	var total float64
 	byCategory := make(map[string]float64)
 	byDay := make(map[string]float64)
 
 	for _, e := range expenses {
-		total += e.Amount
+		effectiveAmount := e.BaseAmount
+		if effectiveAmount == 0 && e.Amount > 0 {
+			effectiveAmount = e.Amount
+		}
+		total += effectiveAmount
 		catKey := fmt.Sprintf("%d", e.Category)
-		byCategory[catKey] += e.Amount
+		byCategory[catKey] += effectiveAmount
 
 		dayKey := "unassigned"
 		if e.DayID != nil && *e.DayID != "" {
 			dayKey = *e.DayID
 		}
-		byDay[dayKey] += e.Amount
+		byDay[dayKey] += effectiveAmount
 	}
 
 	// Round to 2 decimal places

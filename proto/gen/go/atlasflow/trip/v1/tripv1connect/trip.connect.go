@@ -36,4 +36,5 @@ type TripServiceHandler interface {
 
 	GetPublicShareTrip(context.Context, *tripv1.GetPublicShareTripRequest) (*tripv1.GetPublicShareTripResponse, error)
 	ClonePublicTrip(context.Context, *tripv1.ClonePublicTripRequest) (*tripv1.ClonePublicTripResponse, error)
+	OptimizeDayRoute(context.Context, *tripv1.OptimizeDayRouteRequest) (*tripv1.OptimizeDayRouteResponse, error)
 }

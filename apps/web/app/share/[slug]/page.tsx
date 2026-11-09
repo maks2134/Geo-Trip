@@ -2,6 +2,7 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { apiClient } from "@/shared/lib/api";
 import { PublicShareView } from "@/features/share/PublicShareView";
+import { PrintDossier } from "@/features/trip-workspace/PrintDossier";
 import { MapCanvas } from "@/shared/map/MapCanvas";
 import { Trip } from "@/entities/trip";
 
@@ -58,6 +59,7 @@ export default async function SharePage({ params }: SharePageProps) {
     <main className="relative w-screen h-screen overflow-hidden">
       <MapCanvas places={[]} trip={readOnlyTripAdapter} readOnly={true} />
       <PublicShareView trip={publicTrip} />
+      <PrintDossier trip={readOnlyTripAdapter} isPublicShare={true} />
     </main>
   );
 }

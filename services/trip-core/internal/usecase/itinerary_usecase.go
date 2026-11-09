@@ -131,3 +131,48 @@ func (u *ItineraryUsecase) RemovePlace(ctx context.Context, tripID, itemID, user
 	}
 	return u.repo.DeletePlaceItem(ctx, tripID, itemID)
 }
+
+type OptimizeDayRouteInput struct {
+	TripID    string
+	DayID     string
+	UserID    string
+	LockStart bool
+	LockEnd   bool
+}
+
+func (u *ItineraryUsecase) OptimizeDayRoute(ctx context.Context, in OptimizeDayRouteInput) (domain.TSPOptimizationResult, error) {
+	t, err := u.repo.GetTrip(ctx, in.TripID)
+	if err != nil {
+		return domain.TSPOptimizationResult{}, err
+	}
+	if err := t.AssertOwner(in.UserID); err != nil {
+		return domain.TSPOptimizationResult{}, err
+	}
+
+	allItems, err := u.repo.ListPlaceItems(ctx, in.TripID)
+	if err != nil {
+		return domain.TSPOptimizationResult{}, fmt.Errorf("list places for day: %w", err)
+	}
+
+	var places []domain.ItineraryPlaceItem
+	for _, it := range allItems {
+		if it.DayID != nil && *it.DayID == in.DayID {
+			places = append(places, it)
+		}
+	}
+
+	res := domain.OptimizeDayRoute2Opt(places, in.LockStart, in.LockEnd)
+
+	// Update Lexorank positions sequentially
+	var prevPos string
+	now := u.clock.Now()
+	for i := range res.OrderedPlaces {
+		newPos, _ := domain.RankBetween(prevPos, "")
+		res.OrderedPlaces[i].Position = newPos
+		res.OrderedPlaces[i].UpdatedAt = now
+		_ = u.repo.UpdatePlaceItem(ctx, res.OrderedPlaces[i])
+		prevPos = newPos
+	}
+
+	return res, nil
+}

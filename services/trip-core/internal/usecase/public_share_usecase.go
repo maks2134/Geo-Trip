@@ -21,10 +21,14 @@ func NewPublicShareUsecase(repo TripRepository, clock Clock, ids IDGen) *PublicS
 }
 
 func generateSlug() string {
-	b := make([]byte, 8)
+	b := make([]byte, 12)
 	_, _ = rand.Read(b)
-	s := base64.RawURLEncoding.EncodeToString(b)
-	return strings.ToLower(strings.ReplaceAll(s, "-", ""))[:10]
+	s := strings.ToLower(base64.RawURLEncoding.EncodeToString(b))
+	s = strings.ReplaceAll(strings.ReplaceAll(s, "-", ""), "_", "")
+	if len(s) > 10 {
+		return s[:10]
+	}
+	return s
 }
 
 func (u *PublicShareUsecase) EnableShare(ctx context.Context, tripID, userID string) (string, error) {

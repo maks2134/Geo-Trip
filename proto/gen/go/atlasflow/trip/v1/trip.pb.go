@@ -81,16 +81,21 @@ type TripDay struct {
 }
 
 type Expense struct {
-	ID          string          `json:"id"`
-	TripID      string          `json:"trip_id"`
-	DayID       *string         `json:"day_id,omitempty"`
-	PlaceItemID *string         `json:"place_item_id,omitempty"`
-	Category    ExpenseCategory `json:"category"`
-	Amount      float64         `json:"amount"`
-	Currency    string          `json:"currency"`
-	Title       string          `json:"title"`
-	Notes       string          `json:"notes"`
-	CreatedAt   time.Time       `json:"created_at"`
+	ID               string          `json:"id"`
+	TripID           string          `json:"trip_id"`
+	DayID            *string         `json:"day_id,omitempty"`
+	PlaceItemID      *string         `json:"place_item_id,omitempty"`
+	Category         ExpenseCategory `json:"category"`
+	Amount           float64         `json:"amount"`
+	Currency         string          `json:"currency"`
+	OriginalCurrency string          `json:"original_currency"`
+	OriginalAmount   float64         `json:"original_amount"`
+	FxRate           float64         `json:"fx_rate"`
+	BaseAmount       float64         `json:"base_amount"`
+	IsCustomRate     bool            `json:"is_custom_rate"`
+	Title            string          `json:"title"`
+	Notes            string          `json:"notes"`
+	CreatedAt        time.Time       `json:"created_at"`
 }
 
 type BudgetSummary struct {
@@ -321,14 +326,18 @@ type RemovePlaceFromTripResponse struct {
 }
 
 type AddExpenseRequest struct {
-	TripID      string          `json:"trip_id"`
-	DayID       *string         `json:"day_id,omitempty"`
-	PlaceItemID *string         `json:"place_item_id,omitempty"`
-	Category    ExpenseCategory `json:"category"`
-	Amount      float64         `json:"amount"`
-	Currency    string          `json:"currency"`
-	Title       string          `json:"title"`
-	Notes       string          `json:"notes"`
+	TripID           string          `json:"trip_id"`
+	DayID            *string         `json:"day_id,omitempty"`
+	PlaceItemID      *string         `json:"place_item_id,omitempty"`
+	Category         ExpenseCategory `json:"category"`
+	Amount           float64         `json:"amount"`
+	Currency         string          `json:"currency"`
+	Title            string          `json:"title"`
+	Notes            string          `json:"notes"`
+	OriginalCurrency string          `json:"original_currency"`
+	OriginalAmount   float64         `json:"original_amount"`
+	FxRate           float64         `json:"fx_rate"`
+	IsCustomRate     bool            `json:"is_custom_rate"`
 }
 
 type AddExpenseResponse struct {
@@ -452,4 +461,21 @@ type GetPublicShareTripRequest struct {
 
 type GetPublicShareTripResponse struct {
 	Trip *PublicTrip `json:"trip"`
+}
+
+type OptimizeDayRouteRequest struct {
+	TripID    string `json:"trip_id"`
+	DayID     string `json:"day_id"`
+	LockStart bool   `json:"lock_start"`
+	LockEnd   bool   `json:"lock_end"`
+}
+
+type OptimizeDayRouteResponse struct {
+	DayID               string               `json:"day_id"`
+	OrderedPlaceIDs     []string             `json:"ordered_place_ids"`
+	OriginalDistanceKM  float64              `json:"original_distance_km"`
+	OptimizedDistanceKM float64              `json:"optimized_distance_km"`
+	DistanceSavedKM     float64              `json:"distance_saved_km"`
+	SavingsPercent      float64              `json:"savings_percent"`
+	Places              []ItineraryPlaceItem `json:"places"`
 }

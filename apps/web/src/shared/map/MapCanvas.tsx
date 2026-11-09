@@ -9,6 +9,7 @@ import { Trip } from "@/entities/trip";
 import { VISITED_COUNTRIES_GEOJSON } from "@/features/world-map/world-geojson";
 import { fitBoundsPlaces } from "./flyTo";
 import { useTranslation } from "@/shared/i18n/i18n-context";
+import { apiClient } from "@/shared/lib/api";
 
 interface MapCanvasProps {
   places?: Place[];
@@ -30,7 +31,7 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const satelliteErrorsRef = useRef<number>(0);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const {
     mode,
@@ -44,7 +45,17 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
     openPlaceDrawer,
     satelliteErrorToast,
     setSatelliteErrorToast,
+    quickPinMode,
+    setQuickPinMode,
+    droppedPin,
+    setDroppedPin,
+    activeRegionFilter,
   } = useMapUIStore();
+
+  const quickPinModeRef = useRef(quickPinMode);
+  quickPinModeRef.current = quickPinMode;
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
 
   // Function to attach/re-attach custom GeoJSON and raster sources & layers
   const setupCustomLayers = useCallback((map: maplibregl.Map) => {
@@ -185,6 +196,35 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
       setupCustomLayers(map);
     });
 
+    // Map click for Quick Pin tool (FEAT-02)
+    map.on("click", async (e: maplibregl.MapMouseEvent) => {
+      if (!quickPinModeRef.current) return;
+      const { lat, lng } = e.lngLat;
+      const currentLoc = localeRef.current;
+
+      setDroppedPin({
+        lat,
+        lng,
+        name: `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+        address: "Reverse geocoding...",
+      });
+      setQuickPinMode(false);
+
+      try {
+        const geo = await apiClient.reverseGeocode(lat, lng, currentLoc);
+        setDroppedPin({
+          lat,
+          lng,
+          name: geo.name || `Dropped Pin (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+          address: geo.address,
+          city: geo.city,
+          country: geo.country,
+        });
+      } catch {
+        // fallback remains
+      }
+    });
+
     // Re-attach custom GeoJSON & raster layers whenever style finishes loading (styledata / style.load)
     map.on("style.load", () => {
       setupCustomLayers(map);
@@ -215,6 +255,44 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
     if (!mapRef.current) return;
     mapRef.current.setStyle(MAP_STYLES[theme]);
   }, [theme]);
+
+  // Update cursor on Quick Pin mode toggle (FEAT-02)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.getCanvas().style.cursor = quickPinMode ? "crosshair" : "";
+  }, [quickPinMode]);
+
+  // Handle UN Regional filter camera flyTo (FEAT-06)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !activeRegionFilter || mode !== "world") return;
+
+    const REGION_CENTERS: Record<string, { center: [number, number]; zoom: number }> = {
+      "Western Europe": { center: [4.5, 48.5], zoom: 4.5 },
+      "Southern Europe": { center: [14.0, 40.5], zoom: 4.5 },
+      "Northern Europe": { center: [16.0, 60.0], zoom: 3.8 },
+      "Eastern Europe": { center: [28.0, 52.0], zoom: 3.8 },
+      "South-Eastern Asia": { center: [104.0, 13.0], zoom: 4.2 },
+      "Eastern Asia": { center: [120.0, 36.0], zoom: 3.6 },
+      "Southern Asia": { center: [78.0, 22.0], zoom: 4.0 },
+      "Northern America": { center: [-98.0, 40.0], zoom: 3.2 },
+      "South America": { center: [-60.0, -18.0], zoom: 3.0 },
+      "Northern Africa": { center: [18.0, 26.0], zoom: 3.5 },
+      "Sub-Saharan Africa": { center: [22.0, -1.0], zoom: 3.0 },
+      "Australia and New Zealand": { center: [138.0, -26.0], zoom: 3.5 },
+    };
+
+    const target = REGION_CENTERS[activeRegionFilter];
+    if (target) {
+      map.flyTo({
+        center: target.center,
+        zoom: target.zoom,
+        duration: 1600,
+        essential: true,
+      });
+    }
+  }, [activeRegionFilter, mode]);
 
   // Update Satellite visibility & contrast on basemap switch
   useEffect(() => {
@@ -354,7 +432,28 @@ export function MapCanvas({ places = [], trip, readOnly = false }: MapCanvasProp
         fitBoundsPlaces(map, activeCoords, { paddingLeft: readOnly ? 100 : 440 });
       }
     }
-  }, [mode, places, trip, selectedDayId, statusFilters, categoryFilters, openPlaceDrawer, readOnly]);
+
+    // Render Dropped Quick Pin marker (FEAT-02)
+    if (droppedPin) {
+      const el = document.createElement("div");
+      el.className = "cursor-pointer transition-transform hover:scale-125 duration-150";
+      el.innerHTML = `
+        <div class="relative flex items-center justify-center">
+          <div class="w-8 h-8 rounded-full bg-amber-500 text-slate-900 font-extrabold text-sm shadow-2xl flex items-center justify-center ring-4 ring-amber-400/50">
+            📍
+          </div>
+          <div class="absolute -inset-2 rounded-full border-2 border-amber-400 animate-ping pointer-events-none"></div>
+        </div>
+      `;
+      el.addEventListener("click", () => {
+        // Re-focus drawer
+      });
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([droppedPin.lng, droppedPin.lat])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+  }, [mode, places, trip, selectedDayId, statusFilters, categoryFilters, openPlaceDrawer, readOnly, droppedPin]);
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden">

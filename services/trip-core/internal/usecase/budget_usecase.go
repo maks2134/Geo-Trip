@@ -18,15 +18,19 @@ func NewBudgetUsecase(repo TripRepository, clock Clock, ids IDGen) *BudgetUsecas
 }
 
 type AddExpenseInput struct {
-	TripID      string
-	UserID      string
-	DayID       *string
-	PlaceItemID *string
-	Category    domain.ExpenseCategory
-	Amount      float64
-	Currency    string
-	Title       string
-	Notes       string
+	TripID           string
+	UserID           string
+	DayID            *string
+	PlaceItemID      *string
+	Category         domain.ExpenseCategory
+	Amount           float64
+	Currency         string
+	OriginalCurrency string
+	OriginalAmount   float64
+	FxRate           float64
+	IsCustomRate     bool
+	Title            string
+	Notes            string
 }
 
 func (u *BudgetUsecase) AddExpense(ctx context.Context, in AddExpenseInput) (domain.Expense, domain.BudgetSummary, error) {
@@ -47,17 +51,36 @@ func (u *BudgetUsecase) AddExpense(ctx context.Context, in AddExpenseInput) (dom
 		curr = t.Currency
 	}
 
+	origCurr := in.OriginalCurrency
+	if origCurr == "" {
+		origCurr = curr
+	}
+	origAmount := in.OriginalAmount
+	if origAmount <= 0 {
+		origAmount = in.Amount
+	}
+	fxRate := in.FxRate
+	if fxRate <= 0 {
+		fxRate = 1.0
+	}
+	baseAmount := domain.CalculateBaseAmount(origAmount, fxRate)
+
 	exp := domain.Expense{
-		ID:          u.ids.New(),
-		TripID:      in.TripID,
-		DayID:       in.DayID,
-		PlaceItemID: in.PlaceItemID,
-		Category:    in.Category,
-		Amount:      in.Amount,
-		Currency:    curr,
-		Title:       in.Title,
-		Notes:       in.Notes,
-		CreatedAt:   u.clock.Now(),
+		ID:               u.ids.New(),
+		TripID:           in.TripID,
+		DayID:            in.DayID,
+		PlaceItemID:      in.PlaceItemID,
+		Category:         in.Category,
+		Amount:           baseAmount,
+		Currency:         curr,
+		OriginalCurrency: origCurr,
+		OriginalAmount:   origAmount,
+		FxRate:           fxRate,
+		BaseAmount:       baseAmount,
+		IsCustomRate:     in.IsCustomRate,
+		Title:            in.Title,
+		Notes:            in.Notes,
+		CreatedAt:        u.clock.Now(),
 	}
 
 	if err := u.repo.CreateExpense(ctx, exp); err != nil {

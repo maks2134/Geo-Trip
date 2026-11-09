@@ -49,6 +49,7 @@ SELECTED extras:
 5) go-geo → services/geo-places/ (locale geocode hint, distance helper)
 6) web-map → apps/web/ (MH-A/B/C/D + CAND-10/01/06/08)
 7) verifier → read-only: task test, task build, web build, Clean Arch check, hardcoded-string audit, /share privacy audit
+8) manual-qa → real browser: click through every user-facing locked AC (skill manual-browser-qa); file bugs to owners; require MANUAL_QA_PASSED before ship
 
 Brief each worker with owned paths, must-not-touch, AC IDs (MH-*/CAND-*), and skills. Parallelize after deploy+proto foundations. Never two writers on the same paths.
 
@@ -67,7 +68,8 @@ Brief each worker with owned paths, must-not-touch, AC IDs (MH-*/CAND-*), and sk
 4. Parallel Tracks 3–5
 5. Track 6 web
 6. Track 7 verifier until green against ACs
-7. release-ship for v0.2.0:
+7. Track 8 manual-qa: open real browser, walk MH-A/B/C/D + CAND-* UI flows, write docs/releases/v0.2.0-manual-qa.md, loop bugs to authors until MANUAL_QA_PASSED=yes
+8. release-ship for v0.2.0 (only after verifier + manual-qa):
    - commit without secrets
    - push to GitHub (maks2134/Geo-Trip)
    - annotated tag v0.2.0
@@ -76,10 +78,11 @@ Brief each worker with owned paths, must-not-touch, AC IDs (MH-*/CAND-*), and sk
 ### Acceptance
 - All locked ACs pass
 - task test / task build / web build green
+- manual-qa `MANUAL_QA_PASSED=yes` after real browser walkthrough
 - Share/clone never leak budget or private attachments
 - GitHub has commits + tag v0.2.0 + Release
 
-Ask only if a locked AC is ambiguous or GitHub auth/remote blocks ship. Otherwise start immediately from the release doc.
+Ask only if a locked AC is ambiguous, browser cannot start, or GitHub auth/remote blocks ship. Otherwise start immediately from the release doc.
 ```
 
 ---

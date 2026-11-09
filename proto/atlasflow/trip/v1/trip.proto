@@ -36,6 +36,7 @@ service TripService {
 
   rpc GetPublicShareTrip(GetPublicShareTripRequest) returns (GetPublicShareTripResponse);
   rpc ClonePublicTrip(ClonePublicTripRequest) returns (ClonePublicTripResponse);
+  rpc OptimizeDayRoute(OptimizeDayRouteRequest) returns (OptimizeDayRouteResponse);
 }
 
 enum TripStatus {
@@ -120,6 +121,11 @@ message Expense {
   string title = 8;
   string notes = 9;
   google.protobuf.Timestamp created_at = 10;
+  string original_currency = 11;
+  double original_amount = 12;
+  double fx_rate = 13;
+  double base_amount = 14;
+  bool is_custom_rate = 15;
 }
 
 message BudgetSummary {
@@ -358,6 +364,10 @@ message AddExpenseRequest {
   string currency = 6;
   string title = 7;
   string notes = 8;
+  string original_currency = 9;
+  double original_amount = 10;
+  double fx_rate = 11;
+  bool is_custom_rate = 12;
 }
 
 message AddExpenseResponse {
@@ -481,4 +491,21 @@ message GetPublicShareTripRequest {
 
 message GetPublicShareTripResponse {
   PublicTrip trip = 1;
+}
+
+message OptimizeDayRouteRequest {
+  string trip_id = 1;
+  string day_id = 2;
+  bool lock_start = 3;
+  bool lock_end = 4;
+}
+
+message OptimizeDayRouteResponse {
+  string day_id = 1;
+  repeated string ordered_place_ids = 2;
+  double original_distance_km = 3;
+  double optimized_distance_km = 4;
+  double distance_saved_km = 5;
+  double savings_percent = 6;
+  repeated ItineraryPlaceItem places = 7;
 }

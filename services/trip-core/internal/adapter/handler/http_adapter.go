@@ -220,5 +220,41 @@ func NewHTTPHandler(h *TripHandler) http.Handler {
 		})
 	})
 
+	// Route optimization (FEAT-04 / CAND-08)
+	mux.HandleFunc("/atlasflow.trip.v1.TripService/OptimizeDayRoute", func(w http.ResponseWriter, r *http.Request) {
+		var req tripv1.OptimizeDayRouteRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeErr(w, err)
+			return
+		}
+		resp, err := h.OptimizeDayRoute(withUser(r).Context(), &req)
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, resp)
+	})
+
+	mux.HandleFunc("POST /api/v1/trips/{trip_id}/days/{day_id}/optimize", func(w http.ResponseWriter, r *http.Request) {
+		tripID := r.PathValue("trip_id")
+		dayID := r.PathValue("day_id")
+		var body struct {
+			LockStart bool `json:"lock_start"`
+			LockEnd   bool `json:"lock_end"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		resp, err := h.OptimizeDayRoute(withUser(r).Context(), &tripv1.OptimizeDayRouteRequest{
+			TripID:    tripID,
+			DayID:     dayID,
+			LockStart: body.LockStart,
+			LockEnd:   body.LockEnd,
+		})
+		if err != nil {
+			writeErr(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, resp)
+	})
+
 	return mux
 }

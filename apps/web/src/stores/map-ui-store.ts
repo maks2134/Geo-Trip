@@ -4,6 +4,24 @@ import { PinCategory, PinStatus } from "@/entities/place";
 export type WorkspaceTab = "itinerary" | "budget" | "checklists";
 export type ThemeMode = "system" | "dark" | "light";
 export type BasemapMode = "streets" | "satellite";
+export type NavAppPreference = "auto" | "google" | "apple" | "yandex";
+
+export interface DroppedPin {
+  lat: number;
+  lng: number;
+  name?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+}
+
+export interface MilestoneAlert {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  threshold: number;
+}
 
 interface MapUIState {
   mode: "world" | "trip";
@@ -20,6 +38,14 @@ interface MapUIState {
   categoryFilters: PinCategory[];
   satelliteErrorToast: boolean;
 
+  // v0.3.0 features
+  quickPinMode: boolean;
+  droppedPin: DroppedPin | null;
+  navAppPreference: NavAppPreference;
+  dossierOpen: boolean;
+  activeRegionFilter: string | null;
+  unlockedMilestoneAlert: MilestoneAlert | null;
+
   setMode: (mode: "world" | "trip") => void;
   setThemeMode: (mode: ThemeMode) => void;
   setBasemap: (basemap: BasemapMode) => void;
@@ -34,6 +60,15 @@ interface MapUIState {
   toggleStatusFilter: (status: PinStatus) => void;
   toggleCategoryFilter: (category: PinCategory) => void;
   resetFilters: () => void;
+
+  // v0.3.0 setters
+  setQuickPinMode: (enabled: boolean) => void;
+  toggleQuickPinMode: () => void;
+  setDroppedPin: (pin: DroppedPin | null) => void;
+  setNavAppPreference: (pref: NavAppPreference) => void;
+  setDossierOpen: (open: boolean) => void;
+  setActiveRegionFilter: (region: string | null) => void;
+  setUnlockedMilestoneAlert: (milestone: MilestoneAlert | null) => void;
 }
 
 function resolveActiveTheme(mode: ThemeMode): "dark" | "light" {
@@ -42,6 +77,14 @@ function resolveActiveTheme(mode: ThemeMode): "dark" | "light" {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
   return "dark";
+}
+
+function getStoredNavApp(): NavAppPreference {
+  if (typeof localStorage !== "undefined") {
+    const val = localStorage.getItem("atlasflow_nav_app");
+    if (val === "google" || val === "apple" || val === "yandex") return val;
+  }
+  return "auto";
 }
 
 export const useMapUIStore = create<MapUIState>((set) => ({
@@ -58,6 +101,14 @@ export const useMapUIStore = create<MapUIState>((set) => ({
   statusFilters: ["visited", "planned", "wishlist"],
   categoryFilters: ["food", "stay", "sight", "nature", "transport"],
   satelliteErrorToast: false,
+
+  // v0.3.0 initial state
+  quickPinMode: false,
+  droppedPin: null,
+  navAppPreference: getStoredNavApp(),
+  dossierOpen: false,
+  activeRegionFilter: null,
+  unlockedMilestoneAlert: null,
 
   setMode: (mode) => set({ mode }),
   setThemeMode: (themeMode) => {
@@ -88,7 +139,7 @@ export const useMapUIStore = create<MapUIState>((set) => ({
   setSelectedDayId: (selectedDayId) => set({ selectedDayId }),
   openPlaceDrawer: (drawerPlaceId) =>
     set({ drawerPlaceId, isDrawerOpen: true }),
-  closePlaceDrawer: () => set({ drawerPlaceId: null, isDrawerOpen: false }),
+  closePlaceDrawer: () => set({ drawerPlaceId: null, isDrawerOpen: false, droppedPin: null }),
   setActiveWorkspaceTab: (activeWorkspaceTab) => set({ activeWorkspaceTab }),
   toggleBacklog: () => set((s) => ({ isBacklogOpen: !s.isBacklogOpen })),
   toggleStatusFilter: (status) =>
@@ -112,4 +163,18 @@ export const useMapUIStore = create<MapUIState>((set) => ({
       statusFilters: ["visited", "planned", "wishlist"],
       categoryFilters: ["food", "stay", "sight", "nature", "transport"],
     }),
+
+  // v0.3.0 actions
+  setQuickPinMode: (quickPinMode) => set({ quickPinMode }),
+  toggleQuickPinMode: () => set((s) => ({ quickPinMode: !s.quickPinMode })),
+  setDroppedPin: (droppedPin) => set({ droppedPin, isDrawerOpen: !!droppedPin }),
+  setNavAppPreference: (navAppPreference) => {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("atlasflow_nav_app", navAppPreference);
+    }
+    set({ navAppPreference });
+  },
+  setDossierOpen: (dossierOpen) => set({ dossierOpen }),
+  setActiveRegionFilter: (activeRegionFilter) => set({ activeRegionFilter }),
+  setUnlockedMilestoneAlert: (unlockedMilestoneAlert) => set({ unlockedMilestoneAlert }),
 }));

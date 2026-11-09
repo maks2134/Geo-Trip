@@ -250,16 +250,17 @@ func (r *PostgresTripRepo) DeletePlaceItem(ctx context.Context, tripID, id strin
 // Expenses
 func (r *PostgresTripRepo) CreateExpense(ctx context.Context, e domain.Expense) error {
 	const q = `
-		INSERT INTO expenses (id, trip_id, day_id, place_item_id, category, amount, currency, title, notes, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+		INSERT INTO expenses (id, trip_id, day_id, place_item_id, category, amount, currency, title, notes, created_at, original_currency, original_amount, fx_rate, base_amount, is_custom_rate)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
 	_, err := r.db.ExecContext(ctx, q,
 		e.ID, e.TripID, e.DayID, e.PlaceItemID, int(e.Category), e.Amount, e.Currency, e.Title, e.Notes, e.CreatedAt,
+		e.OriginalCurrency, e.OriginalAmount, e.FxRate, e.BaseAmount, e.IsCustomRate,
 	)
 	return err
 }
 
 func (r *PostgresTripRepo) ListExpenses(ctx context.Context, tripID string, dayID *string, category *domain.ExpenseCategory) ([]domain.Expense, error) {
-	q := `SELECT id, trip_id, day_id, place_item_id, category, amount, currency, title, notes, created_at FROM expenses WHERE trip_id = $1`
+	q := `SELECT id, trip_id, day_id, place_item_id, category, amount, currency, title, notes, created_at, COALESCE(original_currency, currency), COALESCE(original_amount, amount), COALESCE(fx_rate, 1.0), COALESCE(base_amount, amount), COALESCE(is_custom_rate, false) FROM expenses WHERE trip_id = $1`
 	args := []any{tripID}
 	argIdx := 2
 	if dayID != nil {
@@ -286,6 +287,7 @@ func (r *PostgresTripRepo) ListExpenses(ctx context.Context, tripID string, dayI
 		var cat int
 		if err := rows.Scan(
 			&e.ID, &e.TripID, &e.DayID, &e.PlaceItemID, &cat, &e.Amount, &e.Currency, &e.Title, &e.Notes, &e.CreatedAt,
+			&e.OriginalCurrency, &e.OriginalAmount, &e.FxRate, &e.BaseAmount, &e.IsCustomRate,
 		); err != nil {
 			return nil, err
 		}

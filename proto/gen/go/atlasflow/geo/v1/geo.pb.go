@@ -79,10 +79,43 @@ type SearchPlacesResponse struct {
 type ReverseGeocodeRequest struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
+	Language  string  `json:"language"`
 }
 
 type ReverseGeocodeResponse struct {
-	Metadata ReverseGeocodeMetadata `json:"metadata"`
+	Name             string                 `json:"name"`
+	City             string                 `json:"city"`
+	Country          string                 `json:"country"`
+	CountryCode      string                 `json:"country_code"`
+	FormattedAddress string                 `json:"formatted_address"`
+	CategoryHint     string                 `json:"category_hint"`
+	Metadata         ReverseGeocodeMetadata `json:"metadata"`
+}
+
+type RegionProgress struct {
+	RegionKey            string  `json:"region_key"`
+	RegionName           string  `json:"region_name"`
+	VisitedCountries     int32   `json:"visited_countries"`
+	TotalCountries       int32   `json:"total_countries"`
+	CompletionPercentage float64 `json:"completion_percentage"`
+}
+
+type MilestoneBadge struct {
+	BadgeKey    string `json:"badge_key"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Icon        string `json:"icon"`
+	IsUnlocked  bool   `json:"is_unlocked"`
+	UnlockedAt  string `json:"unlocked_at"`
+}
+
+type GetRegionalMilestonesRequest struct {
+	UserID string `json:"user_id"`
+}
+
+type GetRegionalMilestonesResponse struct {
+	Regions []RegionProgress `json:"regions"`
+	Badges  []MilestoneBadge `json:"badges"`
 }
 
 type GetVisitedCountriesRequest struct {

@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Copy, Check, Clock, Globe, ShieldCheck, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Calendar, Copy, Check, Clock, Globe, ShieldCheck, Image as ImageIcon, Loader2, Printer } from "lucide-react";
 import { PublicTripView } from "@/entities/trip";
 import { GlassPanel } from "@/shared/ui/GlassPanel";
 import { Badge } from "@/shared/ui/Badge";
 import { useTranslation } from "@/shared/i18n/i18n-context";
+import { useMapUIStore } from "@/stores/map-ui-store";
 import { apiClient } from "@/shared/lib/api";
 
 interface PublicShareViewProps {
@@ -16,6 +17,7 @@ interface PublicShareViewProps {
 export function PublicShareView({ trip }: PublicShareViewProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { setDossierOpen } = useMapUIStore();
   const [selectedDayId, setSelectedDayId] = useState(trip.days[0]?.id || "");
   const [isCopying, setIsCopying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -114,6 +116,15 @@ export function PublicShareView({ trip }: PublicShareViewProps) {
                   ? t("share.copySuccess")
                   : t("share.copyToMyTrips")}
               </span>
+            </button>
+
+            {/* Print / PDF Dossier CTA (FEAT-05) */}
+            <button
+              onClick={() => setDossierOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl font-medium text-xs bg-white/[0.05] hover:bg-white/10 text-slate-200 border border-white/10 transition-colors"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t("dossier.printBtn")}</span>
             </button>
             {errorMessage && (
               <div className="text-[11px] text-rose-400 text-center font-medium">{errorMessage}</div>

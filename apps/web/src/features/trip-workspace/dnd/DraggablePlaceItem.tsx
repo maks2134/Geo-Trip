@@ -3,12 +3,13 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Clock, DollarSign, Footprints, Train, Car } from "lucide-react";
+import { GripVertical, Clock, DollarSign, Footprints, Train, Car, Navigation } from "lucide-react";
 import { PlaceRef } from "@/entities/trip";
 import { Badge } from "@/shared/ui/Badge";
 import { useMapUIStore } from "@/stores/map-ui-store";
 import { cn } from "@/shared/lib/utils";
 import { useTranslation } from "@/shared/i18n/i18n-context";
+import { buildSinglePlaceUrl } from "@/shared/lib/navigation";
 
 interface DraggablePlaceItemProps {
   item: PlaceRef;
@@ -17,7 +18,7 @@ interface DraggablePlaceItemProps {
 
 export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProps) {
   const { t } = useTranslation();
-  const { openPlaceDrawer } = useMapUIStore();
+  const { openPlaceDrawer, navAppPreference } = useMapUIStore();
   const {
     attributes,
     listeners,
@@ -81,6 +82,21 @@ export function DraggablePlaceItem({ item, orderNumber }: DraggablePlaceItemProp
             {item.notes && <span className="truncate max-w-[140px] italic">"{item.notes}"</span>}
           </div>
         </div>
+
+        {/* 1-Tap Navigation Link (FEAT-01) */}
+        <a
+          href={buildSinglePlaceUrl(
+            { latitude: item.lat, longitude: item.lng, name: item.name },
+            navAppPreference
+          )}
+          target="_blank"
+          rel="noreferrer"
+          title={t("nav.openInMaps")}
+          onClick={(e) => e.stopPropagation()}
+          className="p-1.5 rounded-lg bg-white/5 hover:bg-sky-500/20 text-[var(--text-muted)] hover:text-sky-300 transition-colors shrink-0"
+        >
+          <Navigation className="w-3.5 h-3.5" />
+        </a>
       </div>
 
       {item.transitToNext && (

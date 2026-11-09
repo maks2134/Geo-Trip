@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/makskozlov/atlasflow/services/gateway-auth/internal/adapter/fx"
 	"github.com/makskozlov/atlasflow/services/gateway-auth/internal/adapter/handler"
 	"github.com/makskozlov/atlasflow/services/gateway-auth/internal/adapter/jwt"
 	"github.com/makskozlov/atlasflow/services/gateway-auth/internal/adapter/middleware"
@@ -45,6 +46,7 @@ func main() {
 	jwtSecret := getEnv("JWT_SECRET", "atlasflow-default-secret-change-me-32-bytes-long!")
 	tripServiceURL := getEnv("TRIP_SERVICE_URL", "http://localhost:8081")
 	geoServiceURL := getEnv("GEO_SERVICE_URL", "http://localhost:8082")
+	redisAddr := getEnv("REDIS_ADDR", getEnv("REDIS_URL", "localhost:6379"))
 	dbURL := os.Getenv("DATABASE_URL")
 
 	clock := realClock{}
@@ -87,6 +89,8 @@ func main() {
 	burst, _ := strconv.Atoi(getEnv("RATE_LIMIT_BURST", "50"))
 	rateLimiter := middleware.NewIPRateLimiter(rps, burst)
 
+	fxService := fx.NewFXService(redisAddr)
+
 	tripProxy, err := proxy.NewReverseProxy(tripServiceURL, logger)
 	if err != nil {
 		logger.Error("failed to initialize trip reverse proxy", "error", err)
@@ -105,7 +109,10 @@ func main() {
 		_, _ = w.Write([]byte(`{"status":"ok","service":"gateway-auth"}`))
 	})
 
-	// 2. ConnectRPC AuthService procedure endpoints
+	// 2. FX Rates endpoint (cached via Redis + memory fallback)
+	mux.Handle("GET /api/v1/fx/rates", rateLimiter.Limit(fxService))
+
+	// 3. ConnectRPC AuthService procedure endpoints
 	mux.Handle("/atlasflow.auth.v1.AuthService/", authMiddleware.OptionalAuth(http.HandlerFunc(authHandler.ServeConnectRPC)))
 
 	// 3. Public Auth REST endpoints
@@ -131,7 +138,7 @@ func main() {
 		mux.Handle("/api/v1/trips/", authMiddleware.RequireAuth(tripProxy))
 	}
 	if geoProxy != nil {
-		mux.Handle("/api/v1/geo/", authMiddleware.RequireAuth(geoProxy))
+		mux.Handle("/api/v1/geo/", authMiddleware.OptionalAuth(geoProxy))
 	}
 
 	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

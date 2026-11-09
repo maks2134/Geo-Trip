@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	geov1 "github.com/makskozlov/atlasflow/proto/gen/go/atlasflow/geo/v1"
@@ -93,6 +94,12 @@ func (h *GeoHandler) ReverseGeocode(ctx context.Context, req *geov1.ReverseGeoco
 	}
 
 	return &geov1.ReverseGeocodeResponse{
+		Name:             meta.Name,
+		City:             meta.City,
+		Country:          meta.CountryName,
+		CountryCode:      meta.CountryISO2,
+		FormattedAddress: meta.Address,
+		CategoryHint:     "sight",
 		Metadata: geov1.ReverseGeocodeMetadata{
 			Name:        meta.Name,
 			Address:     meta.Address,
@@ -102,6 +109,47 @@ func (h *GeoHandler) ReverseGeocode(ctx context.Context, req *geov1.ReverseGeoco
 			Latitude:    meta.Location.Latitude,
 			Longitude:   meta.Location.Longitude,
 		},
+	}, nil
+}
+
+func (h *GeoHandler) GetRegionalMilestones(ctx context.Context, req *geov1.GetRegionalMilestonesRequest) (*geov1.GetRegionalMilestonesResponse, error) {
+	userID := ""
+	if req != nil {
+		userID = req.UserID
+	}
+	userID = extractUserID(ctx, userID)
+
+	regions, badges, err := h.uc.GetRegionalMilestones(ctx, userID)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+
+	var protoRegions []geov1.RegionProgress
+	for _, r := range regions {
+		protoRegions = append(protoRegions, geov1.RegionProgress{
+			RegionKey:            r.RegionKey,
+			RegionName:           r.RegionName,
+			VisitedCountries:     r.VisitedCountries,
+			TotalCountries:       r.TotalCountries,
+			CompletionPercentage: r.CompletionPercentage,
+		})
+	}
+
+	var protoBadges []geov1.MilestoneBadge
+	for _, b := range badges {
+		protoBadges = append(protoBadges, geov1.MilestoneBadge{
+			BadgeKey:    b.BadgeKey,
+			Title:       b.Title,
+			Description: b.Description,
+			Icon:        b.Icon,
+			IsUnlocked:  b.IsUnlocked,
+			UnlockedAt:  b.UnlockedAt,
+		})
+	}
+
+	return &geov1.GetRegionalMilestonesResponse{
+		Regions: protoRegions,
+		Badges:  protoBadges,
 	}, nil
 }
 
@@ -336,6 +384,50 @@ func NewHTTPHandler(handler geov1connect.GeoServiceHandler) http.Handler {
 			return
 		}
 		res, err := handler.MarkCountryVisited(withAuth(r), &req)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, res)
+	})
+
+	mux.HandleFunc("/atlasflow.geo.v1.GeoService/GetRegionalMilestones", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var req geov1.GetRegionalMilestonesRequest
+		if r.Body != nil && r.ContentLength > 0 {
+			_ = json.NewDecoder(r.Body).Decode(&req)
+		}
+		res, err := handler.GetRegionalMilestones(withAuth(r), &req)
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, res)
+	})
+
+	mux.HandleFunc("/api/v1/geo/milestones", func(w http.ResponseWriter, r *http.Request) {
+		res, err := handler.GetRegionalMilestones(withAuth(r), &geov1.GetRegionalMilestonesRequest{})
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, res)
+	})
+
+	mux.HandleFunc("/api/v1/geo/reverse", func(w http.ResponseWriter, r *http.Request) {
+		latStr := r.URL.Query().Get("lat")
+		lngStr := r.URL.Query().Get("lng")
+		var lat, lng float64
+		_, _ = fmt.Sscanf(latStr, "%f", &lat)
+		_, _ = fmt.Sscanf(lngStr, "%f", &lng)
+		res, err := handler.ReverseGeocode(withAuth(r), &geov1.ReverseGeocodeRequest{
+			Latitude:  lat,
+			Longitude: lng,
+			Language:  r.URL.Query().Get("lang"),
+		})
 		if err != nil {
 			writeError(w, err)
 			return

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   X,
   Star,
@@ -16,26 +16,53 @@ import {
   Lock,
   Globe,
   Maximize2,
+  Navigation,
+  MapPin,
+  Plus,
+  Loader2,
   Image as ImageIcon,
 } from "lucide-react";
-import { Place, PinStatus, PlaceAttachment } from "@/entities/place";
+import { Place, PinCategory, PinStatus, PlaceAttachment } from "@/entities/place";
 import { useMapUIStore } from "@/stores/map-ui-store";
 import { GlassPanel } from "@/shared/ui/GlassPanel";
 import { Badge } from "@/shared/ui/Badge";
 import { cn } from "@/shared/lib/utils";
 import { useTranslation } from "@/shared/i18n/i18n-context";
 import { apiClient } from "@/shared/lib/api";
+import { buildSinglePlaceUrl } from "@/shared/lib/navigation";
 
 interface PlaceDrawerProps {
   places: Place[];
 }
 
 export function PlaceDrawer({ places }: PlaceDrawerProps) {
-  const { drawerPlaceId, isDrawerOpen, closePlaceDrawer, selectedTripId } = useMapUIStore();
+  const {
+    drawerPlaceId,
+    isDrawerOpen,
+    closePlaceDrawer,
+    selectedTripId,
+    selectedDayId,
+    droppedPin,
+    setDroppedPin,
+    navAppPreference,
+  } = useMapUIStore();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const place = places.find((p) => p.id === drawerPlaceId);
+
+  // Quick Pin Form State (FEAT-02)
+  const [quickName, setQuickName] = useState("");
+  const [quickCategory, setQuickCategory] = useState<PinCategory>("sight");
+  const [quickDayId, setQuickDayId] = useState<string | null>(selectedDayId || "day-1");
+  const [isAddingQuick, setIsAddingQuick] = useState(false);
+
+  useEffect(() => {
+    if (droppedPin) {
+      setQuickName(droppedPin.name || `Dropped Pin (${droppedPin.lat.toFixed(4)}, ${droppedPin.lng.toFixed(4)})`);
+      setQuickDayId(selectedDayId || "day-1");
+    }
+  }, [droppedPin, selectedDayId]);
 
   const [status, setStatus] = useState<PinStatus>(place?.status || "planned");
   const [notes, setNotes] = useState<string>(place?.notes || "");
@@ -45,7 +72,188 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [isPrivateUpload, setIsPrivateUpload] = useState<boolean>(true);
 
-  if (!isDrawerOpen || !place) return null;
+  useEffect(() => {
+    if (place) {
+      setStatus(place.status);
+      setNotes(place.notes || "");
+      setAttachments(place.attachments || []);
+    }
+  }, [place]);
+
+  if (!isDrawerOpen) return null;
+
+  // Handle Quick Add Pin Submission (FEAT-02)
+  const handleQuickAdd = async () => {
+    if (!droppedPin) return;
+    setIsAddingQuick(true);
+    try {
+      await apiClient.addPlaceToItinerary(selectedTripId, {
+        name: quickName.trim() || `Place (${droppedPin.lat.toFixed(4)}, ${droppedPin.lng.toFixed(4)})`,
+        category: quickCategory,
+        lat: droppedPin.lat,
+        lng: droppedPin.lng,
+        dayId: quickDayId,
+        city: droppedPin.city,
+        country: droppedPin.country,
+        address: droppedPin.address,
+      });
+      setDroppedPin(null);
+      closePlaceDrawer();
+    } catch {
+      setIsAddingQuick(false);
+    }
+  };
+
+  // If Drawer opened via Quick Pin drop (FEAT-02)
+  if (droppedPin) {
+    return (
+      <div className="fixed top-0 right-0 h-full w-[380px] max-w-full z-40 p-4 pointer-events-none">
+        <GlassPanel className="h-full flex flex-col overflow-hidden pointer-events-auto rounded-3xl shadow-2xl border border-amber-500/30">
+          <div className="relative p-5 bg-gradient-to-br from-amber-500/20 via-sky-500/10 to-transparent border-b border-white/10">
+            <button
+              onClick={() => {
+                setDroppedPin(null);
+                closePlaceDrawer();
+              }}
+              aria-label={t("place.close")}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider mb-1">
+              <MapPin className="w-4 h-4 animate-bounce" />
+              <span>{t("quickPin.header")}</span>
+            </div>
+            <h3 className="text-base font-bold text-white leading-tight">
+              {droppedPin.name || `${droppedPin.lat.toFixed(4)}, ${droppedPin.lng.toFixed(4)}`}
+            </h3>
+            <p className="text-xs text-[var(--text-muted)] mt-1 truncate">
+              {droppedPin.address || `${droppedPin.lat.toFixed(5)}, ${droppedPin.lng.toFixed(5)}`}
+            </p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+            {/* Place Name Edit */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                {t("quickPin.placeName")}
+              </label>
+              <input
+                type="text"
+                value={quickName}
+                onChange={(e) => setQuickName(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-[var(--text)] font-medium focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                placeholder="E.g. Shinjuku Gyoen Park"
+              />
+            </div>
+
+            {/* Category Selector */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                {t("filters.category")}
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(["sight", "food", "stay", "nature", "transport"] as PinCategory[]).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setQuickCategory(cat)}
+                    className={cn(
+                      "py-1.5 px-2 rounded-xl text-center capitalize font-medium border transition-all",
+                      quickCategory === cat
+                        ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm"
+                        : "bg-white/[0.03] text-[var(--text-muted)] border-white/5 hover:bg-white/[0.06]"
+                    )}
+                  >
+                    {t(`filters.${cat}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Destination Day Selection */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                {t("quickPin.addTo")}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQuickDayId("day-1")}
+                  className={cn(
+                    "py-2 px-3 rounded-xl border text-left font-medium transition-all",
+                    quickDayId === "day-1"
+                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                      : "bg-white/[0.03] text-[var(--text-muted)] border-white/5 hover:bg-white/[0.06]"
+                  )}
+                >
+                  <div className="font-semibold">{t("quickPin.dayOne")}</div>
+                  <div className="text-[10px] opacity-70">Active Itinerary</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickDayId(null)}
+                  className={cn(
+                    "py-2 px-3 rounded-xl border text-left font-medium transition-all",
+                    quickDayId === null
+                      ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
+                      : "bg-white/[0.03] text-[var(--text-muted)] border-white/5 hover:bg-white/[0.06]"
+                  )}
+                >
+                  <div className="font-semibold">{t("quickPin.backlog")}</div>
+                  <div className="text-[10px] opacity-70">Unassigned pool</div>
+                </button>
+              </div>
+            </div>
+
+            {/* External Navigation Link Preview */}
+            <div className="pt-2">
+              <a
+                href={buildSinglePlaceUrl(
+                  { latitude: droppedPin.lat, longitude: droppedPin.lng, name: quickName },
+                  navAppPreference
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-white/[0.04] text-[var(--text-muted)] hover:text-white border border-white/10 transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5 text-sky-400" />
+                <span>{t("nav.openInMaps")}</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-white/10 flex items-center gap-2">
+            <button
+              onClick={() => {
+                setDroppedPin(null);
+                closePlaceDrawer();
+              }}
+              className="flex-1 py-2 rounded-xl text-center font-medium bg-white/5 text-[var(--text-muted)] hover:bg-white/10 transition-colors"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              onClick={handleQuickAdd}
+              disabled={isAddingQuick}
+              className="flex-1 py-2 rounded-xl text-center font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 flex items-center justify-center gap-1.5 transition-all"
+            >
+              {isAddingQuick ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>{t("quickPin.addBtn")}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </GlassPanel>
+      </div>
+    );
+  }
+
+  if (!place) return null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,7 +261,6 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
 
     setUploadError(null);
 
-    // Validate type and size
     const isImage = file.type.startsWith("image/");
     const isPdf = file.type === "application/pdf";
 
@@ -73,7 +280,6 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
 
     setIsUploading(true);
     try {
-      // 1. Request presigned upload URL from trip-core
       const presign = await apiClient.createPresignedUpload(selectedTripId, {
         filename: file.name,
         contentType: file.type,
@@ -83,13 +289,9 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
         ownerType: "place",
       });
 
-      // 2. Upload binary directly to MinIO/S3
       await apiClient.uploadFileToMinIO(presign.uploadUrl, file);
-
-      // 3. Confirm upload with trip-core
       await apiClient.confirmUpload(selectedTripId, presign.attachmentId);
 
-      // 4. Update UI
       const newAtt: PlaceAttachment = {
         id: presign.attachmentId,
         name: file.name,
@@ -99,9 +301,10 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
         isPrivate: isPrivateUpload,
         uploadedAt: new Date().toISOString(),
       };
+
       setAttachments((prev) => [newAtt, ...prev]);
     } catch (err: any) {
-      setUploadError(err?.message || "Failed to upload file");
+      setUploadError(err.message || "Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -113,10 +316,10 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
 
   return (
     <>
-      <div className="fixed top-6 right-6 bottom-24 w-96 z-40 animate-in slide-in-from-right-8 duration-200">
-        <GlassPanel className="h-full flex flex-col overflow-hidden shadow-2xl border-white/15">
-          {/* Header Image */}
-          <div className="relative h-44 w-full bg-slate-900 shrink-0">
+      <div className="fixed top-0 right-0 h-full w-[380px] max-w-full z-40 p-4 pointer-events-none">
+        <GlassPanel className="h-full flex flex-col overflow-hidden pointer-events-auto rounded-3xl shadow-2xl">
+          {/* Header Image & Actions */}
+          <div className="relative h-44 w-full bg-slate-800 shrink-0 overflow-hidden">
             {place.imageUrl ? (
               <img
                 src={place.imageUrl}
@@ -177,7 +380,7 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
               </div>
             </div>
 
-            {/* Quick Metrics */}
+            {/* Quick Metrics & Navigation Action (FEAT-01) */}
             <div className="grid grid-cols-3 gap-2 py-2 border-y border-white/5">
               {place.rating && (
                 <div className="p-2 rounded-xl bg-white/[0.03] text-center">
@@ -188,13 +391,15 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
                   <div className="text-[10px] text-[var(--text-muted)]">{t("place.rating")}</div>
                 </div>
               )}
-              <div className="p-2 rounded-xl bg-white/[0.03] text-center">
-                <div className="flex items-center justify-center gap-1 font-bold text-[var(--text)]">
-                  <Clock className="w-3.5 h-3.5 text-sky-400" />
-                  <span>{place.durationMinutes || 60}{t("place.minutes")}</span>
+              {place.durationMinutes && (
+                <div className="p-2 rounded-xl bg-white/[0.03] text-center">
+                  <div className="flex items-center justify-center gap-1 font-bold text-[var(--text)]">
+                    <Clock className="w-3.5 h-3.5 text-sky-400" />
+                    <span>{place.durationMinutes}m</span>
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)]">{t("place.duration")}</div>
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)]">{t("place.duration")}</div>
-              </div>
+              )}
               <div className="p-2 rounded-xl bg-white/[0.03] text-center">
                 <div className="flex items-center justify-center gap-1 font-bold text-[var(--text)]">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
@@ -204,7 +409,34 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
               </div>
             </div>
 
-            {/* Photo Gallery Strip (MH-C) */}
+            {/* 1-Tap Navigation Button (FEAT-01) */}
+            <div className="flex gap-2">
+              <a
+                href={buildSinglePlaceUrl(
+                  { latitude: place.lat, longitude: place.lng, name: place.name },
+                  navAppPreference
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-semibold transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>{t("nav.openInMaps")}</span>
+              </a>
+              {place.externalLink && (
+                <a
+                  href={place.externalLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-xl bg-white/[0.04] text-[var(--text-muted)] hover:text-white border border-white/5 transition-colors flex items-center justify-center"
+                  title="Official Website"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+
+            {/* Photo Gallery Strip */}
             {imageAttachments.length > 0 && (
               <div className="space-y-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
@@ -241,92 +473,61 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
               />
             </div>
 
-            {/* Official Link */}
-            {place.externalLink && (
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  {t("place.links")}
-                </span>
-                <a
-                  href={place.externalLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-sky-400 hover:bg-white/[0.06] transition-colors"
-                >
-                  <span className="truncate">{place.externalLink}</span>
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-2" />
-                </a>
-              </div>
-            )}
-
-            {/* MinIO Upload Area (MH-C) */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
+            {/* MinIO Upload Area */}
+            <div className="space-y-2 pt-1 border-t border-white/5">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                  {t("place.documents")} & {t("place.photos")}
+                  {t("place.attachments")}
                 </span>
-                <div className="flex items-center gap-1.5 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setIsPrivateUpload(!isPrivateUpload)}
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-0.5 rounded-md border transition-all",
-                      isPrivateUpload
-                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                        : "bg-sky-500/10 border-sky-500/30 text-sky-400"
-                    )}
-                  >
-                    {isPrivateUpload ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                    <span>{isPrivateUpload ? t("place.privateBadge") : t("place.publicBadge")}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPrivateUpload(!isPrivateUpload)}
+                  className="flex items-center gap-1 text-[10px] text-[var(--text-muted)] hover:text-white transition-colors"
+                >
+                  {isPrivateUpload ? <Lock className="w-3 h-3 text-amber-400" /> : <Globe className="w-3 h-3 text-sky-400" />}
+                  <span>{isPrivateUpload ? "Private" : "Public"}</span>
+                </button>
               </div>
 
-              {/* Upload Dropzone */}
-              <div
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-3.5 rounded-xl bg-white/[0.02] border border-dashed border-white/15 hover:border-[var(--accent)] cursor-pointer text-center space-y-1.5 transition-colors group"
+                disabled={isUploading}
+                className="w-full py-2.5 px-3 rounded-xl border border-dashed border-white/20 hover:border-[var(--accent)] bg-white/[0.02] hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-[var(--text-muted)] hover:text-[var(--text)] disabled:opacity-50"
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="flex justify-center">
-                  <Upload className="w-5 h-5 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors" />
-                </div>
-                <p className="text-[11px] text-[var(--text)] font-medium">
-                  {isUploading ? t("place.uploading") : t("place.uploadDropzone")}
-                </p>
-                <p className="text-[10px] text-[var(--text-muted)]">
-                  {t("place.uploadSizeLimit")}
-                </p>
-              </div>
+                {isUploading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+                    <span>Uploading to MinIO...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload photo or PDF voucher</span>
+                  </>
+                )}
+              </button>
 
-              {uploadError && (
-                <p className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">
-                  {uploadError}
-                </p>
-              )}
+              {uploadError && <div className="text-red-400 text-[10px] leading-tight">{uploadError}</div>}
 
-              {/* Document List */}
               {docAttachments.length > 0 && (
                 <div className="space-y-1.5 pt-1">
                   {docAttachments.map((att) => (
                     <div
                       key={att.id}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/5"
+                      className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/5"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="w-4 h-4 text-rose-400 shrink-0" />
-                        <span className="truncate font-medium">{att.name}</span>
-                        {att.isPrivate && (
-                          <span title="Hidden from public share" className="p-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0">
-                            <Lock className="w-3 h-3" />
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2 truncate">
+                        <Paperclip className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                        <span className="truncate text-[var(--text)]">{att.name}</span>
                       </div>
                       <a
                         href={att.url}
@@ -345,7 +546,6 @@ export function PlaceDrawer({ places }: PlaceDrawerProps) {
         </GlassPanel>
       </div>
 
-      {/* Lightbox Modal (MH-C) */}
       {lightboxUrl && (
         <div
           onClick={() => setLightboxUrl(null)}

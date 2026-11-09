@@ -1,14 +1,23 @@
 "use client";
 
 import React from "react";
-import { Globe, MapPin, Moon, Sun, Laptop } from "lucide-react";
+import { Globe, MapPin, Moon, Sun, Laptop, Crosshair, Printer } from "lucide-react";
 import { useMapUIStore, ThemeMode } from "@/stores/map-ui-store";
 import { GlassPanel } from "./GlassPanel";
 import { cn } from "@/shared/lib/utils";
 import { useTranslation, Locale } from "@/shared/i18n/i18n-context";
 
 export function Dock() {
-  const { mode, setMode, themeMode, theme, setThemeMode } = useMapUIStore();
+  const {
+    mode,
+    setMode,
+    themeMode,
+    theme,
+    setThemeMode,
+    quickPinMode,
+    toggleQuickPinMode,
+    setDossierOpen,
+  } = useMapUIStore();
   const { t, locale, setLocale } = useTranslation();
 
   const cycleTheme = () => {
@@ -48,6 +57,35 @@ export function Dock() {
           <MapPin className="w-4 h-4" />
           <span>{t("nav.trips")}</span>
         </button>
+
+        {/* Quick Pin Tool (FEAT-02) */}
+        <button
+          onClick={toggleQuickPinMode}
+          title={t("dock.quickPinTooltip")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+            quickPinMode
+              ? "bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/20"
+              : "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 border-transparent"
+          )}
+        >
+          <Crosshair className={cn("w-3.5 h-3.5", quickPinMode && "animate-spin")} />
+          <span className="hidden md:inline">
+            {quickPinMode ? t("dock.quickPinActive") : t("dock.quickPin")}
+          </span>
+        </button>
+
+        {/* Dossier Print Tool (FEAT-05) */}
+        {mode === "trip" && (
+          <button
+            onClick={() => setDossierOpen(true)}
+            title={t("dossier.printTooltip")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5 transition-colors border border-transparent"
+          >
+            <Printer className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden md:inline">{t("dossier.title")}</span>
+          </button>
+        )}
 
         <div className="h-5 w-px bg-white/10 mx-1" />
 

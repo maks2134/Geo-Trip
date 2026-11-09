@@ -11,6 +11,9 @@ service GeoService {
   rpc ReverseGeocode(ReverseGeocodeRequest) returns (ReverseGeocodeResponse);
   rpc GetVisitedCountries(GetVisitedCountriesRequest) returns (GetVisitedCountriesResponse);
   rpc MarkCountryVisited(MarkCountryVisitedRequest) returns (MarkCountryVisitedResponse);
+
+  // v0.3.0: UN Geoscheme regional completion percentages & milestone badges
+  rpc GetRegionalMilestones(GetRegionalMilestonesRequest) returns (GetRegionalMilestonesResponse);
 }
 
 enum PlaceStatus {
@@ -83,13 +86,22 @@ message SearchPlacesResponse {
   repeated Place places = 1;
 }
 
+// v0.3.0: Reverse geocoding request with language hint
 message ReverseGeocodeRequest {
   double latitude = 1;
   double longitude = 2;
+  string language = 3;
 }
 
+// v0.3.0: Direct flat fields for Quick Pin capture + preserved metadata
 message ReverseGeocodeResponse {
-  ReverseGeocodeMetadata metadata = 1;
+  string name = 1;
+  string city = 2;
+  string country = 3;
+  string country_code = 4;
+  string formatted_address = 5;
+  string category_hint = 6;
+  optional ReverseGeocodeMetadata metadata = 7;
 }
 
 message GetVisitedCountriesRequest {
@@ -109,4 +121,31 @@ message MarkCountryVisitedRequest {
 
 message MarkCountryVisitedResponse {
   TravelerStats stats = 1;
+}
+
+// v0.3.0: UN Geoscheme regional progress & milestones
+message RegionProgress {
+  string region_key = 1;
+  string region_name = 2;
+  int32 visited_countries = 3;
+  int32 total_countries = 4;
+  double completion_percentage = 5;
+}
+
+message MilestoneBadge {
+  string badge_key = 1;
+  string title = 2;
+  string description = 3;
+  string icon = 4;
+  bool is_unlocked = 5;
+  string unlocked_at = 6;
+}
+
+message GetRegionalMilestonesRequest {
+  string user_id = 1;
+}
+
+message GetRegionalMilestonesResponse {
+  repeated RegionProgress regions = 1;
+  repeated MilestoneBadge badges = 2;
 }

@@ -420,3 +420,94 @@ func TestAttachmentMimeAndSize(t *testing.T) {
 	assert.ErrorIs(t, domain.ValidateAttachmentMeta("video/mp4", 1024), domain.ErrInvalidMimeType)
 	assert.ErrorIs(t, domain.ValidateAttachmentMeta("application/zip", 1024), domain.ErrInvalidMimeType)
 }
+
+func TestOptimizeDayRoute_2Opt(t *testing.T) {
+	ctx := context.Background()
+	_, suite := setupTest(t)
+
+	trip, err := suite.tripUsecase.CreateTrip(ctx, usecase.CreateTripInput{
+		OwnerID:   "planner-1",
+		Title:     "Tokyo Optimization Test",
+		StartDate: time.Now(),
+		EndDate:   time.Now().AddDate(0, 0, 3),
+	})
+	require.NoError(t, err)
+
+	day, err := suite.dayUsecase.AddDay(ctx, usecase.AddDayInput{
+		TripID: trip.ID,
+		UserID: "planner-1",
+		Date:   time.Now(),
+		Title:  "Day 1: Sightseeing",
+	})
+	require.NoError(t, err)
+
+	// Add 4 places in criss-crossing order:
+	// A: 35.6586, 139.7454 (Tokyo Tower - South)
+	// B: 35.7148, 139.7967 (Sensoji - North-East)
+	// C: 35.6605, 139.7292 (Roppongi - South, near Tower)
+	// D: 35.7101, 139.8107 (Skytree - North-East, near Sensoji)
+	places := []domain.PlaceRef{
+		{PlaceID: "pl-1", Name: "Tokyo Tower", Latitude: 35.6586, Longitude: 139.7454, Category: domain.PlaceCategorySight},
+		{PlaceID: "pl-2", Name: "Senso-ji", Latitude: 35.7148, Longitude: 139.7967, Category: domain.PlaceCategorySight},
+		{PlaceID: "pl-3", Name: "Roppongi Hills", Latitude: 35.6605, Longitude: 139.7292, Category: domain.PlaceCategorySight},
+		{PlaceID: "pl-4", Name: "Tokyo Skytree", Latitude: 35.7101, Longitude: 139.8107, Category: domain.PlaceCategorySight},
+	}
+
+	for _, p := range places {
+		_, err := suite.itineraryUsecase.AddPlace(ctx, usecase.AddPlaceInput{
+			TripID: trip.ID,
+			UserID: "planner-1",
+			DayID:  &day.ID,
+			Place:  p,
+		})
+		require.NoError(t, err)
+	}
+
+	// Optimize with start locked to Tokyo Tower
+	res, err := suite.itineraryUsecase.OptimizeDayRoute(ctx, usecase.OptimizeDayRouteInput{
+		TripID:    trip.ID,
+		DayID:     day.ID,
+		UserID:    "planner-1",
+		LockStart: true,
+		LockEnd:   false,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 4, len(res.OrderedPlaces))
+	assert.Equal(t, "Tokyo Tower", res.OrderedPlaces[0].Place.Name, "First place must remain locked")
+	assert.LessOrEqual(t, res.OptimizedDistanceKM, res.OriginalDistanceKM, "Optimized distance must be <= original distance")
+}
+
+func TestExpense_MultiCurrencyConversion(t *testing.T) {
+	ctx := context.Background()
+	_, suite := setupTest(t)
+
+	trip, err := suite.tripUsecase.CreateTrip(ctx, usecase.CreateTripInput{
+		OwnerID:     "nomad-fx",
+		Title:       "Japan Budget Trip",
+		StartDate:   time.Now(),
+		EndDate:     time.Now().AddDate(0, 0, 7),
+		Currency:    "USD",
+		BudgetLimit: 1000,
+	})
+	require.NoError(t, err)
+
+	// Add JPY expense converted to USD (15000 JPY at fx_rate 1/150 = $100.00)
+	exp, summary, err := suite.budgetUsecase.AddExpense(ctx, usecase.AddExpenseInput{
+		TripID:           trip.ID,
+		UserID:           "nomad-fx",
+		Category:         domain.ExpenseCategoryFood,
+		Amount:           15000,
+		Currency:         "USD",
+		OriginalCurrency: "JPY",
+		OriginalAmount:   15000,
+		FxRate:           1.0 / 150.0,
+		IsCustomRate:     true,
+		Title:            "Kobe Beef Dinner",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 15000.0, exp.OriginalAmount)
+	assert.Equal(t, "JPY", exp.OriginalCurrency)
+	assert.Equal(t, 100.0, exp.BaseAmount)
+	assert.Equal(t, 100.0, summary.TotalSpent)
+	assert.Equal(t, "USD", summary.Currency)
+}

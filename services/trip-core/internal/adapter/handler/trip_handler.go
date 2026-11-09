@@ -401,15 +401,19 @@ func (h *TripHandler) AddExpense(ctx context.Context, req *tripv1.AddExpenseRequ
 	}
 
 	exp, summary, err := h.budgetUsecase.AddExpense(ctx, usecase.AddExpenseInput{
-		TripID:      req.TripID,
-		UserID:      uid,
-		DayID:       req.DayID,
-		PlaceItemID: req.PlaceItemID,
-		Category:    domain.ExpenseCategory(req.Category),
-		Amount:      req.Amount,
-		Currency:    req.Currency,
-		Title:       req.Title,
-		Notes:       req.Notes,
+		TripID:           req.TripID,
+		UserID:           uid,
+		DayID:            req.DayID,
+		PlaceItemID:      req.PlaceItemID,
+		Category:         domain.ExpenseCategory(req.Category),
+		Amount:           req.Amount,
+		Currency:         req.Currency,
+		OriginalCurrency: req.OriginalCurrency,
+		OriginalAmount:   req.OriginalAmount,
+		FxRate:           req.FxRate,
+		IsCustomRate:     req.IsCustomRate,
+		Title:            req.Title,
+		Notes:            req.Notes,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -417,16 +421,21 @@ func (h *TripHandler) AddExpense(ctx context.Context, req *tripv1.AddExpenseRequ
 
 	return &tripv1.AddExpenseResponse{
 		Expense: &tripv1.Expense{
-			ID:          exp.ID,
-			TripID:      exp.TripID,
-			DayID:       exp.DayID,
-			PlaceItemID: exp.PlaceItemID,
-			Category:    tripv1.ExpenseCategory(exp.Category),
-			Amount:      exp.Amount,
-			Currency:    exp.Currency,
-			Title:       exp.Title,
-			Notes:       exp.Notes,
-			CreatedAt:   exp.CreatedAt,
+			ID:               exp.ID,
+			TripID:           exp.TripID,
+			DayID:            exp.DayID,
+			PlaceItemID:      exp.PlaceItemID,
+			Category:         tripv1.ExpenseCategory(exp.Category),
+			Amount:           exp.Amount,
+			Currency:         exp.Currency,
+			OriginalCurrency: exp.OriginalCurrency,
+			OriginalAmount:   exp.OriginalAmount,
+			FxRate:           exp.FxRate,
+			BaseAmount:       exp.BaseAmount,
+			IsCustomRate:     exp.IsCustomRate,
+			Title:            exp.Title,
+			Notes:            exp.Notes,
+			CreatedAt:        exp.CreatedAt,
 		},
 		BudgetSummary: &tripv1.BudgetSummary{
 			BudgetLimit:     summary.BudgetLimit,
@@ -458,16 +467,21 @@ func (h *TripHandler) ListExpenses(ctx context.Context, req *tripv1.ListExpenses
 	var protoExpenses []tripv1.Expense
 	for _, e := range expenses {
 		protoExpenses = append(protoExpenses, tripv1.Expense{
-			ID:          e.ID,
-			TripID:      e.TripID,
-			DayID:       e.DayID,
-			PlaceItemID: e.PlaceItemID,
-			Category:    tripv1.ExpenseCategory(e.Category),
-			Amount:      e.Amount,
-			Currency:    e.Currency,
-			Title:       e.Title,
-			Notes:       e.Notes,
-			CreatedAt:   e.CreatedAt,
+			ID:               e.ID,
+			TripID:           e.TripID,
+			DayID:            e.DayID,
+			PlaceItemID:      e.PlaceItemID,
+			Category:         tripv1.ExpenseCategory(e.Category),
+			Amount:           e.Amount,
+			Currency:         e.Currency,
+			OriginalCurrency: e.OriginalCurrency,
+			OriginalAmount:   e.OriginalAmount,
+			FxRate:           e.FxRate,
+			BaseAmount:       e.BaseAmount,
+			IsCustomRate:     e.IsCustomRate,
+			Title:            e.Title,
+			Notes:            e.Notes,
+			CreatedAt:        e.CreatedAt,
 		})
 	}
 
@@ -832,5 +846,56 @@ func (h *TripHandler) GetPublicShareTrip(ctx context.Context, req *tripv1.GetPub
 			Attachments:      pubAttachments,
 			OwnerDisplayName: pubView.OwnerDisplayName,
 		},
+	}, nil
+}
+
+func (h *TripHandler) OptimizeDayRoute(ctx context.Context, req *tripv1.OptimizeDayRouteRequest) (*tripv1.OptimizeDayRouteResponse, error) {
+	uid, err := GetUserID(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, err)
+	}
+
+	res, err := h.itineraryUsecase.OptimizeDayRoute(ctx, usecase.OptimizeDayRouteInput{
+		TripID:    req.TripID,
+		DayID:     req.DayID,
+		UserID:    uid,
+		LockStart: req.LockStart,
+		LockEnd:   req.LockEnd,
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	var places []tripv1.ItineraryPlaceItem
+	for _, it := range res.OrderedPlaces {
+		places = append(places, tripv1.ItineraryPlaceItem{
+			ID:     it.ID,
+			TripID: it.TripID,
+			DayID:  it.DayID,
+			Place: tripv1.PlaceRef{
+				PlaceID:   it.Place.PlaceID,
+				Name:      it.Place.Name,
+				Latitude:  it.Place.Latitude,
+				Longitude: it.Place.Longitude,
+				Category:  tripv1.PlaceCategory(it.Place.Category),
+				Address:   it.Place.Address,
+			},
+			Position:        it.Position,
+			DurationMinutes: it.DurationMinutes,
+			Cost:            it.Cost,
+			Notes:           it.Notes,
+			CreatedAt:       it.CreatedAt,
+			UpdatedAt:       it.UpdatedAt,
+		})
+	}
+
+	return &tripv1.OptimizeDayRouteResponse{
+		DayID:               req.DayID,
+		OrderedPlaceIDs:     res.OrderedPlaceIDs,
+		OriginalDistanceKM:  res.OriginalDistanceKM,
+		OptimizedDistanceKM: res.OptimizedDistanceKM,
+		DistanceSavedKM:     res.DistanceSavedKM,
+		SavingsPercent:      res.SavingsPercent,
+		Places:              places,
 	}, nil
 }

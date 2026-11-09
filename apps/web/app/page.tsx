@@ -12,6 +12,7 @@ import { DayTimeline } from "@/features/trip-workspace/DayTimeline";
 import { PlaceDrawer } from "@/features/place-drawer/PlaceDrawer";
 import { BudgetTab } from "@/features/budget/BudgetTab";
 import { ChecklistTab } from "@/features/checklists/ChecklistTab";
+import { PrintDossier } from "@/features/trip-workspace/PrintDossier";
 import { useMapUIStore } from "@/stores/map-ui-store";
 import { useTranslation } from "@/shared/i18n/i18n-context";
 import { apiClient } from "@/shared/lib/api";
@@ -130,6 +131,7 @@ export default function HomePage() {
       )}
 
       <PlaceDrawer places={places} />
+      {activeTrip && <PrintDossier trip={activeTrip} />}
     </main>
   );
 }

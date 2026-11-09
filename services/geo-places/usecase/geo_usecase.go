@@ -143,3 +143,19 @@ func (u *GeoUsecase) GetVisitedCountryPolygons(ctx context.Context, userID strin
 
 	return features, nil
 }
+
+func (u *GeoUsecase) GetRegionalMilestones(ctx context.Context, userID string) ([]domain.RegionProgress, []domain.MilestoneBadge, error) {
+	if strings.TrimSpace(userID) == "" {
+		return nil, nil, domain.ErrEmptyOwnerID
+	}
+
+	codes, err := u.repo.GetVisitedCountries(ctx, userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get visited countries for milestones: %w", err)
+	}
+
+	regions := domain.EvaluateRegionalProgress(codes)
+	badges := domain.EvaluateMilestoneBadges(codes)
+
+	return regions, badges, nil
+}

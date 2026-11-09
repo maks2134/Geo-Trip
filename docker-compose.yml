@@ -51,32 +51,16 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin; do
-        sleep 2;
-      done;
-      /usr/bin/mc mb --ignore-existing local/atlasflow-media;
-      /usr/bin/mc anonymous set download local/atlasflow-media/public;
-      cat << 'EOF' > /tmp/cors.xml
-      <CORSConfiguration>
-        <CORSRule>
-          <AllowedOrigin>http://localhost:3000</AllowedOrigin>
-          <AllowedOrigin>http://127.0.0.1:3000</AllowedOrigin>
-          <AllowedMethod>GET</AllowedMethod>
-          <AllowedMethod>PUT</AllowedMethod>
-          <AllowedMethod>HEAD</AllowedMethod>
-          <AllowedMethod>DELETE</AllowedMethod>
-          <AllowedMethod>POST</AllowedMethod>
-          <AllowedHeader>*</AllowedHeader>
-          <ExposeHeader>ETag</ExposeHeader>
-          <MaxAgeSeconds>3600</MaxAgeSeconds>
-        </CORSRule>
-      </CORSConfiguration>
-      EOF
-      /usr/bin/mc cors set local/atlasflow-media /tmp/cors.xml || true;
-      exit 0;
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin; do
+          sleep 2
+        done
+        /usr/bin/mc mb --ignore-existing local/atlasflow-media
+        /usr/bin/mc anonymous set download local/atlasflow-media
+        exit 0
     networks:
       - atlasflow-net
 

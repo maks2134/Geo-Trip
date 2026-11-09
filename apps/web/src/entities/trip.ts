@@ -38,6 +38,13 @@ export interface Expense {
   currency: string;
   category: "stay" | "food" | "transport" | "activity" | "other";
   paidAt: string;
+
+  // v0.3.0 multi-currency fields
+  originalCurrency?: string;
+  originalAmount?: number;
+  fxRate?: number;
+  baseAmount?: number;
+  isCustomRate?: boolean;
 }
 
 export interface ChecklistItem {
