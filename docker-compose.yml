@@ -1,0 +1,168 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: atlasflow-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: atlasflow
+      POSTGRES_PASSWORD: atlasflow_secret
+      POSTGRES_DB: atlasflow
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlasflow -d atlasflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atlasflow-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: atlasflow-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atlasflow-net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: atlasflow-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin; do
+        sleep 2;
+      done;
+      /usr/bin/mc mb --ignore-existing local/atlasflow-media;
+      /usr/bin/mc anonymous set download local/atlasflow-media/public;
+      exit 0;
+      "
+    networks:
+      - atlasflow-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: atlasflow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - atlasflow-net
+
+  geo-places:
+    build:
+      context: .
+      dockerfile: services/geo-places/Dockerfile
+    container_name: atlasflow-geo-places
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      DATABASE_URL: "postgres://atlasflow:atlasflow_secret@postgres:5432/atlasflow?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - atlasflow-net
+
+  trip-core:
+    build:
+      context: .
+      dockerfile: services/trip-core/Dockerfile
+    container_name: atlasflow-trip-core
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: "8081"
+      DATABASE_URL: "postgres://atlasflow:atlasflow_secret@postgres:5432/atlasflow?sslmode=disable"
+      S3_ENDPOINT: "http://minio:9000"
+      S3_BUCKET: "atlasflow-media"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - atlasflow-net
+
+  gateway-auth:
+    build:
+      context: .
+      dockerfile: services/gateway-auth/Dockerfile
+    container_name: atlasflow-gateway-auth
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgres://atlasflow:atlasflow_secret@postgres:5432/atlasflow?sslmode=disable"
+      TRIP_SERVICE_URL: "http://trip-core:8081"
+      GEO_SERVICE_URL: "http://geo-places:8082"
+      JWT_SECRET: "atlasflow-production-super-secret-jwt-key-32-bytes"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      trip-core:
+        condition: service_started
+      geo-places:
+        condition: service_started
+    networks:
+      - atlasflow-net
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: atlasflow-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_GATEWAY_URL: "http://localhost:8080"
+      PORT: "3000"
+    depends_on:
+      - gateway-auth
+    networks:
+      - atlasflow-net
+
+networks:
+  atlasflow-net:
+    name: atlasflow-net
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  redis_data:
