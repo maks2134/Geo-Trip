@@ -4,7 +4,7 @@ WORKDIR /src
 COPY go.work ./
 COPY pkg/ pkg/
 COPY proto/ proto/
-COPY services/trip-core/ services/trip-core/
+COPY services/ services/
 
 WORKDIR /src/services/trip-core
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/trip-core ./cmd/...

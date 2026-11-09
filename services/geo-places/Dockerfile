@@ -4,7 +4,7 @@ WORKDIR /src
 COPY go.work ./
 COPY pkg/ pkg/
 COPY proto/ proto/
-COPY services/geo-places/ services/geo-places/
+COPY services/ services/
 
 WORKDIR /src/services/geo-places
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/geo-places ./cmd/...

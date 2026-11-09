@@ -4,7 +4,7 @@ WORKDIR /src
 COPY go.work ./
 COPY pkg/ pkg/
 COPY proto/ proto/
-COPY services/gateway-auth/ services/gateway-auth/
+COPY services/ services/
 
 WORKDIR /src/services/gateway-auth
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/gateway-auth ./cmd/...
