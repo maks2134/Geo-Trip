@@ -1,0 +1,437 @@
+syntax = "proto3";
+
+package atlasflow.trip.v1;
+
+option go_package = "github.com/makskozlov/atlasflow/proto/gen/go/atlasflow/trip/v1;tripv1";
+
+import "google/protobuf/timestamp.proto";
+
+service TripService {
+  rpc CreateTrip(CreateTripRequest) returns (CreateTripResponse);
+  rpc GetTrip(GetTripRequest) returns (GetTripResponse);
+  rpc ListTrips(ListTripsRequest) returns (ListTripsResponse);
+  rpc UpdateTrip(UpdateTripRequest) returns (UpdateTripResponse);
+  rpc DeleteTrip(DeleteTripRequest) returns (DeleteTripResponse);
+
+  rpc AddDay(AddDayRequest) returns (AddDayResponse);
+  rpc UpdateDay(UpdateDayRequest) returns (UpdateDayResponse);
+  rpc DeleteDay(DeleteDayRequest) returns (DeleteDayResponse);
+
+  rpc AddPlaceToTrip(AddPlaceToTripRequest) returns (AddPlaceToTripResponse);
+  rpc ReorderPlace(ReorderPlaceRequest) returns (ReorderPlaceResponse);
+  rpc RemovePlaceFromTrip(RemovePlaceFromTripRequest) returns (RemovePlaceFromTripResponse);
+
+  rpc AddExpense(AddExpenseRequest) returns (AddExpenseResponse);
+  rpc ListExpenses(ListExpensesRequest) returns (ListExpensesResponse);
+  rpc DeleteExpense(DeleteExpenseRequest) returns (DeleteExpenseResponse);
+
+  rpc AddChecklistItem(AddChecklistItemRequest) returns (AddChecklistItemResponse);
+  rpc ToggleChecklistItem(ToggleChecklistItemRequest) returns (ToggleChecklistItemResponse);
+  rpc ListChecklistItems(ListChecklistItemsRequest) returns (ListChecklistItemsResponse);
+
+  rpc CreateAttachmentPresignedURL(CreateAttachmentPresignedURLRequest) returns (CreateAttachmentPresignedURLResponse);
+  rpc GetPublicShareTrip(GetPublicShareTripRequest) returns (GetPublicShareTripResponse);
+}
+
+enum TripStatus {
+  TRIP_STATUS_UNSPECIFIED = 0;
+  TRIP_STATUS_DRAFT = 1;
+  TRIP_STATUS_UPCOMING = 2;
+  TRIP_STATUS_ACTIVE = 3;
+  TRIP_STATUS_COMPLETED = 4;
+}
+
+enum PlaceCategory {
+  PLACE_CATEGORY_UNSPECIFIED = 0;
+  PLACE_CATEGORY_FOOD = 1;
+  PLACE_CATEGORY_STAY = 2;
+  PLACE_CATEGORY_SIGHT = 3;
+  PLACE_CATEGORY_NATURE = 4;
+  PLACE_CATEGORY_TRANSPORT = 5;
+}
+
+enum ExpenseCategory {
+  EXPENSE_CATEGORY_UNSPECIFIED = 0;
+  EXPENSE_CATEGORY_STAY = 1;
+  EXPENSE_CATEGORY_FOOD = 2;
+  EXPENSE_CATEGORY_TRANSPORT = 3;
+  EXPENSE_CATEGORY_TICKETS = 4;
+  EXPENSE_CATEGORY_OTHER = 5;
+}
+
+enum ChecklistSection {
+  CHECKLIST_SECTION_UNSPECIFIED = 0;
+  CHECKLIST_SECTION_PRE_FLIGHT = 1;
+  CHECKLIST_SECTION_PACKING = 2;
+  CHECKLIST_SECTION_BUY_ON_SITE = 3;
+}
+
+enum AttachmentVisibility {
+  ATTACHMENT_VISIBILITY_UNSPECIFIED = 0;
+  ATTACHMENT_VISIBILITY_PRIVATE = 1;
+  ATTACHMENT_VISIBILITY_PUBLIC = 2;
+}
+
+message PlaceRef {
+  string place_id = 1;
+  string name = 2;
+  double latitude = 3;
+  double longitude = 4;
+  PlaceCategory category = 5;
+  string address = 6;
+}
+
+message ItineraryPlaceItem {
+  string id = 1;
+  string trip_id = 2;
+  optional string day_id = 3;
+  PlaceRef place = 4;
+  string position = 5;
+  int32 duration_minutes = 6;
+  optional double cost = 7;
+  string notes = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message TripDay {
+  string id = 1;
+  string trip_id = 2;
+  int32 day_index = 3;
+  google.protobuf.Timestamp date = 4;
+  string title = 5;
+  string notes = 6;
+  repeated ItineraryPlaceItem places = 7;
+}
+
+message Expense {
+  string id = 1;
+  string trip_id = 2;
+  optional string day_id = 3;
+  optional string place_item_id = 4;
+  ExpenseCategory category = 5;
+  double amount = 6;
+  string currency = 7;
+  string title = 8;
+  string notes = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message BudgetSummary {
+  double budget_limit = 1;
+  double total_spent = 2;
+  string currency = 3;
+  map<string, double> spent_by_category = 4;
+  map<string, double> spent_by_day = 5;
+}
+
+message ChecklistItem {
+  string id = 1;
+  string trip_id = 2;
+  ChecklistSection section = 3;
+  string title = 4;
+  bool is_done = 5;
+  string position = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message ChecklistSummary {
+  int32 total_items = 1;
+  int32 completed_items = 2;
+  double readiness_percentage = 3;
+}
+
+message AttachmentMeta {
+  string id = 1;
+  string trip_id = 2;
+  optional string place_id = 3;
+  optional string day_id = 4;
+  string filename = 5;
+  string content_type = 6;
+  int64 file_size = 7;
+  string storage_key = 8;
+  string download_url = 9;
+  AttachmentVisibility visibility = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message Trip {
+  string id = 1;
+  string owner_id = 2;
+  string title = 3;
+  string description = 4;
+  google.protobuf.Timestamp start_date = 5;
+  google.protobuf.Timestamp end_date = 6;
+  TripStatus status = 7;
+  string cover_url = 8;
+  string currency = 9;
+  double budget_limit = 10;
+  repeated TripDay days = 11;
+  repeated ItineraryPlaceItem backlog = 12;
+  BudgetSummary budget_summary = 13;
+  ChecklistSummary checklist_summary = 14;
+  repeated AttachmentMeta attachments = 15;
+  string share_slug = 16;
+  bool is_public = 17;
+  google.protobuf.Timestamp created_at = 18;
+  google.protobuf.Timestamp updated_at = 19;
+}
+
+message PublicPlaceItem {
+  string id = 1;
+  PlaceRef place = 2;
+  string position = 3;
+  int32 duration_minutes = 4;
+  string notes = 5;
+}
+
+message PublicTripDay {
+  string id = 1;
+  int32 day_index = 2;
+  google.protobuf.Timestamp date = 3;
+  string title = 4;
+  string notes = 5;
+  repeated PublicPlaceItem places = 6;
+}
+
+message PublicAttachmentMeta {
+  string id = 1;
+  string filename = 2;
+  string content_type = 3;
+  string download_url = 4;
+  optional string place_id = 5;
+  optional string day_id = 6;
+}
+
+message PublicTrip {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  google.protobuf.Timestamp start_date = 4;
+  google.protobuf.Timestamp end_date = 5;
+  string cover_url = 6;
+  repeated PublicTripDay days = 7;
+  repeated PublicPlaceItem backlog = 8;
+  repeated PublicAttachmentMeta attachments = 9;
+  string owner_display_name = 10;
+}
+
+message CreateTripRequest {
+  string title = 1;
+  string description = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  string cover_url = 5;
+  string currency = 6;
+  double budget_limit = 7;
+}
+
+message CreateTripResponse {
+  Trip trip = 1;
+}
+
+message GetTripRequest {
+  string trip_id = 1;
+}
+
+message GetTripResponse {
+  Trip trip = 1;
+}
+
+message ListTripsRequest {
+  optional TripStatus status = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListTripsResponse {
+  repeated Trip trips = 1;
+  int32 total_count = 2;
+}
+
+message UpdateTripRequest {
+  string trip_id = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional google.protobuf.Timestamp start_date = 4;
+  optional google.protobuf.Timestamp end_date = 5;
+  optional TripStatus status = 6;
+  optional string cover_url = 7;
+  optional string currency = 8;
+  optional double budget_limit = 9;
+  optional bool is_public = 10;
+}
+
+message UpdateTripResponse {
+  Trip trip = 1;
+}
+
+message DeleteTripRequest {
+  string trip_id = 1;
+}
+
+message DeleteTripResponse {
+  bool success = 1;
+}
+
+message AddDayRequest {
+  string trip_id = 1;
+  google.protobuf.Timestamp date = 2;
+  string title = 3;
+  string notes = 4;
+}
+
+message AddDayResponse {
+  TripDay day = 1;
+}
+
+message UpdateDayRequest {
+  string trip_id = 1;
+  string day_id = 2;
+  optional google.protobuf.Timestamp date = 3;
+  optional string title = 4;
+  optional string notes = 5;
+}
+
+message UpdateDayResponse {
+  TripDay day = 1;
+}
+
+message DeleteDayRequest {
+  string trip_id = 1;
+  string day_id = 2;
+}
+
+message DeleteDayResponse {
+  bool success = 1;
+}
+
+message AddPlaceToTripRequest {
+  string trip_id = 1;
+  PlaceRef place = 2;
+  optional string day_id = 3;
+  string position = 4;
+  int32 duration_minutes = 5;
+  optional double cost = 6;
+  string notes = 7;
+}
+
+message AddPlaceToTripResponse {
+  ItineraryPlaceItem item = 1;
+}
+
+message ReorderPlaceRequest {
+  string trip_id = 1;
+  string place_item_id = 2;
+  optional string target_day_id = 3;
+  string prev_position = 4;
+  string next_position = 5;
+}
+
+message ReorderPlaceResponse {
+  ItineraryPlaceItem item = 1;
+}
+
+message RemovePlaceFromTripRequest {
+  string trip_id = 1;
+  string place_item_id = 2;
+}
+
+message RemovePlaceFromTripResponse {
+  bool success = 1;
+}
+
+message AddExpenseRequest {
+  string trip_id = 1;
+  optional string day_id = 2;
+  optional string place_item_id = 3;
+  ExpenseCategory category = 4;
+  double amount = 5;
+  string currency = 6;
+  string title = 7;
+  string notes = 8;
+}
+
+message AddExpenseResponse {
+  Expense expense = 1;
+  BudgetSummary budget_summary = 2;
+}
+
+message ListExpensesRequest {
+  string trip_id = 1;
+  optional string day_id = 2;
+  optional ExpenseCategory category = 3;
+}
+
+message ListExpensesResponse {
+  repeated Expense expenses = 1;
+  BudgetSummary budget_summary = 2;
+}
+
+message DeleteExpenseRequest {
+  string trip_id = 1;
+  string expense_id = 2;
+}
+
+message DeleteExpenseResponse {
+  bool success = 1;
+  BudgetSummary budget_summary = 2;
+}
+
+message AddChecklistItemRequest {
+  string trip_id = 1;
+  ChecklistSection section = 2;
+  string title = 3;
+  string position = 4;
+}
+
+message AddChecklistItemResponse {
+  ChecklistItem item = 1;
+  ChecklistSummary summary = 2;
+}
+
+message ToggleChecklistItemRequest {
+  string trip_id = 1;
+  string item_id = 2;
+  bool is_done = 3;
+}
+
+message ToggleChecklistItemResponse {
+  ChecklistItem item = 1;
+  ChecklistSummary summary = 2;
+}
+
+message ListChecklistItemsRequest {
+  string trip_id = 1;
+  optional ChecklistSection section = 2;
+}
+
+message ListChecklistItemsResponse {
+  repeated ChecklistItem items = 1;
+  ChecklistSummary summary = 2;
+}
+
+message CreateAttachmentPresignedURLRequest {
+  string trip_id = 1;
+  optional string place_id = 2;
+  optional string day_id = 3;
+  string filename = 4;
+  string content_type = 5;
+  AttachmentVisibility visibility = 6;
+}
+
+message CreateAttachmentPresignedURLResponse {
+  string upload_url = 1;
+  string download_url = 2;
+  string file_key = 3;
+  string attachment_id = 4;
+}
+
+message GetPublicShareTripRequest {
+  string slug = 1;
+}
+
+message GetPublicShareTripResponse {
+  PublicTrip trip = 1;
+}

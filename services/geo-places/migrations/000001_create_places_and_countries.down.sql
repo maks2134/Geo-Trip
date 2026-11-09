@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS visited_countries;
+DROP TABLE IF EXISTS places;
+DROP TABLE IF EXISTS countries;

@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package atlasflow.geo.v1;
+
+option go_package = "github.com/makskozlov/atlasflow/proto/gen/go/atlasflow/geo/v1;geov1";
+
+import "google/protobuf/timestamp.proto";
+
+service GeoService {
+  rpc SearchPlaces(SearchPlacesRequest) returns (SearchPlacesResponse);
+  rpc ReverseGeocode(ReverseGeocodeRequest) returns (ReverseGeocodeResponse);
+  rpc GetVisitedCountries(GetVisitedCountriesRequest) returns (GetVisitedCountriesResponse);
+  rpc MarkCountryVisited(MarkCountryVisitedRequest) returns (MarkCountryVisitedResponse);
+}
+
+enum PlaceStatus {
+  PLACE_STATUS_UNSPECIFIED = 0;
+  PLACE_STATUS_VISITED = 1;
+  PLACE_STATUS_PLANNED = 2;
+  PLACE_STATUS_WISHLIST = 3;
+}
+
+enum PlaceCategory {
+  PLACE_CATEGORY_UNSPECIFIED = 0;
+  PLACE_CATEGORY_FOOD = 1;
+  PLACE_CATEGORY_STAY = 2;
+  PLACE_CATEGORY_SIGHT = 3;
+  PLACE_CATEGORY_NATURE = 4;
+  PLACE_CATEGORY_TRANSPORT = 5;
+}
+
+message BoundingBox {
+  double min_longitude = 1;
+  double min_latitude = 2;
+  double max_longitude = 3;
+  double max_latitude = 4;
+}
+
+message Place {
+  string id = 1;
+  string owner_id = 2;
+  string name = 3;
+  PlaceCategory category = 4;
+  PlaceStatus status = 5;
+  string country_iso2 = 6;
+  string city = 7;
+  double latitude = 8;
+  double longitude = 9;
+  string address = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message ReverseGeocodeMetadata {
+  string name = 1;
+  string address = 2;
+  string city = 3;
+  string country_iso2 = 4;
+  string country_name = 5;
+  double latitude = 6;
+  double longitude = 7;
+}
+
+message TravelerStats {
+  int32 countries_visited = 1;
+  int32 total_countries = 2;
+  double explored_percentage = 3;
+  int32 cities_visited = 4;
+  int32 points_total = 5;
+  double distance_km = 6;
+  repeated string visited_country_codes = 7;
+}
+
+message SearchPlacesRequest {
+  string query = 1;
+  optional BoundingBox bbox = 2;
+  int32 limit = 3;
+  optional PlaceStatus status = 4;
+  optional PlaceCategory category = 5;
+}
+
+message SearchPlacesResponse {
+  repeated Place places = 1;
+}
+
+message ReverseGeocodeRequest {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message ReverseGeocodeResponse {
+  ReverseGeocodeMetadata metadata = 1;
+}
+
+message GetVisitedCountriesRequest {
+  string user_id = 1;
+}
+
+message GetVisitedCountriesResponse {
+  repeated string country_codes = 1;
+  TravelerStats stats = 2;
+}
+
+message MarkCountryVisitedRequest {
+  string user_id = 1;
+  string country_code = 2;
+  bool visited = 3;
+}
+
+message MarkCountryVisitedResponse {
+  TravelerStats stats = 1;
+}

@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: atlasflow-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-atlasflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atlasflow_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-atlasflow}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atlasflow} -d ${POSTGRES_DB:-atlasflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atlasflow-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: atlasflow-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || wget -qO- http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atlasflow-net
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: atlasflow-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-atlasflow-media}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Configuring MinIO client alias...';
+      until /usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+        echo 'MinIO is not ready yet, retrying in 2 seconds...';
+        sleep 2;
+      done;
+      echo 'Ensuring bucket exists: $${MINIO_BUCKET}...';
+      /usr/bin/mc mb --ignore-existing local/$${MINIO_BUCKET};
+      echo 'Configuring public read policy for public media assets...';
+      /usr/bin/mc anonymous set download local/$${MINIO_BUCKET}/public;
+      echo 'MinIO bucket initialization complete.';
+      exit 0;
+      "
+    networks:
+      - atlasflow-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: atlasflow-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - atlasflow-net
+
+networks:
+  atlasflow-net:
+    name: atlasflow-net
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: atlasflow-postgres-data
+  minio_data:
+    name: atlasflow-minio-data
+  redis_data:
+    name: atlasflow-redis-data
