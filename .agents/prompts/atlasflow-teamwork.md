@@ -66,6 +66,7 @@ Hybrid personal world scratch-map + day-by-day trip planner:
 - Exclusive file ownership per worker — never two writers on the same files
 - No scope beyond MVP
 - Prefer real runnable code over docs
+- Task runner: Taskfile.yml (`task`), NOT Makefile — migrate any Make usage into Taskfile
 - Acceptance: docker compose up deps; services boot; core APIs work; web shows world+trip modes; share link is read-only without private data
 
 Start Phase 1 interview only for decisions that block coding (module path naming, map provider key env name). Default everything else sensibly and proceed after my single approval.

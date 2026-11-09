@@ -30,3 +30,4 @@ Adaptive Glass UI, canvas-first map (100% viewport). Floating panels: backdrop-b
 - Go services: Clean Architecture (domain → usecase → adapters). No business logic in handlers/DB layers.
 - Frontend: thin UI; server truth via TanStack Query; map state in Zustand; no DB/API secrets in client.
 - Prefer ConnectRPC contracts in `proto/`; no ad-hoc cross-service DB access.
+- Task runner: **Taskfile.yml** (`task`), not Makefile.

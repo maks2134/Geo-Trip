@@ -29,3 +29,4 @@
 - No god packages (`common`, `utils` dumping grounds).
 - Every usecase method has at least one table-driven unit test for happy path + key error.
 - Do not invent product scope beyond MVP modules listed in `GEMINI.md`.
+- Use Taskfile (`task`), never add Makefile targets.
